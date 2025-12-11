@@ -1,0 +1,45 @@
+/* Card style */
+.post-card {
+    border-radius: 18px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.post-header {
+    padding: 15px 20px;
+    background: #1877f2;
+    color: #fff;
+    border-radius: 18px 18px 0 0;
+}
+
+.post-body {
+    padding: 25px;
+}
+
+/* Inputs */
+.form-control,
+.form-select {
+    border-radius: 12px;
+    padding: 10px 14px;
+    border: 1px solid #ced4da;
+}
+
+/* Rating stars */
+.rating-container {
+    display: flex;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 2.2rem;
+}
+
+.rating-star {
+    color: #ccc;
+    transition: 0.2s;
+}
+
+.rating-star.selected,
+.rating-star:hover,
+.rating-star.hovered {
+    color: #f7c600;
+    transform: scale(1.15);
+}

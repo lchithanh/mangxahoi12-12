@@ -1,0 +1,64 @@
+/* ---------------- HEADER ---------------- */
+.fb-header {
+    height: 60px;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.fb-logo-img { height: 40px; width:auto; }
+.fb-search {
+    background: #f0f2f5;
+    padding: 6px 12px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    width: 250px;
+}
+.fb-search input {
+    border: none;
+    outline: none;
+    background: transparent;
+    margin-left: 6px;
+    width: 100%;
+}
+.fb-middle-menu { display:flex; gap:20px; align-items:center; }
+.fb-middle-item { padding:8px 14px; border-radius:10px; color:#555; font-size:20px; display:flex; align-items:center; justify-content:center; }
+.fb-middle-item.active, .fb-middle-item:hover { background:#f0f2f5; }
+.fb-avatar img { width:40px; height:40px; border-radius:50%; }
+.circle-btn { width:40px; height:40px; background:#f0f2f5; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#333; }
+
+/* ---------------- MAIN ---------------- */
+.fb-container { max-width: 1400px; margin:auto; }
+.fb-left, .fb-right { position:sticky; top:80px; height: calc(100vh - 80px); }
+
+.left-item {
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:#333;
+}
+.left-item:hover { background:#f0f2f5; }
+.left-item-dropdown { cursor:pointer; user-select:none; }
+.dropdown-chude {
+    list-style:none; padding:0; margin:0;
+    max-height:0; overflow:hidden; opacity:0;
+    transition:max-height 0.4s ease, opacity 0.4s ease;
+}
+.dropdown-chude li { padding:8px 12px; border-bottom:1px solid #f0f0f0; background:#fff; }
+.dropdown-chude li:last-child { border-bottom:none; }
+.dropdown-chude li:hover { background:#f1f1f1; }
+.dropdown-chude.show { max-height:500px; opacity:1; transition:max-height 0.4s ease, opacity 0.4s ease; }
+
+.fb-center { padding:10px; }
+.fb-right-box { background:#fff; padding:20px; border-radius:12px; text-align:center; }
+.fb-right-avatar { width:80px; height:80px; border-radius:50%; }
+
+/* Hover effect */
+.avatar-hover:hover { transform: scale(1.1); transition: transform 0.2s ease-in-out; }
+.name-hover:hover { text-decoration: underline; transition: text-decoration 0.2s ease-in-out; }
+.btn-like { border:none; background:none; cursor:pointer; font-size:1.1rem; }
+.btn-like.liked { color:#e0245e; font-weight:bold; }
+
+
