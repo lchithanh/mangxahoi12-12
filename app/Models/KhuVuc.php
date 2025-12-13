@@ -15,12 +15,8 @@ class KhuVuc extends Model
 
     protected $fillable = [
         'ten_khu_vuc',
-        'ma_thanh_pho'
     ];
 
-    public function thanhPho() {
-        return $this->belongsTo(ThanhPho::class, 'ma_thanh_pho', 'ma_thanh_pho');
-    }
 
     public function nhaHangs() {
         return $this->hasMany(NhaHang::class, 'ma_khu_vuc', 'ma_khu_vuc');

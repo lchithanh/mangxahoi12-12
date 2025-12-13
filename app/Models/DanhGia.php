@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class DanhGia extends Model
 {
-    use HasFactory;
-
     protected $table = 'danh_gia';
     protected $primaryKey = 'ma_danh_gia';
     public $timestamps = false;
@@ -16,10 +14,15 @@ class DanhGia extends Model
     protected $fillable = [
         'ma_nguoi_dung',
         'ma_nha_hang',
+        'ma_bai_viet',
         'diem_danh_gia',
         'binh_luan',
         'duong_dan_anh',
         'thoi_gian_tao'
+    ];
+
+    protected $casts = [
+        'thoi_gian_tao' => 'datetime',
     ];
 
     public function nguoiDung() {
@@ -28,7 +31,10 @@ class DanhGia extends Model
 
     public function nhaHang() {
         return $this->belongsTo(NhaHang::class, 'ma_nha_hang', 'ma_nha_hang');
-    }
-    
+    }public function baiViet()
+{
+    return $this->belongsTo(BaiViet::class, 'ma_bai_viet', 'ma_bai_viet');
+}
 
 }
+

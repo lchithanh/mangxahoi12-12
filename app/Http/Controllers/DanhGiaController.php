@@ -51,49 +51,58 @@ class DanhGiaController extends Controller
      * Lưu đánh giá
      */
     public function store(Request $request, $ma_bai_viet)
-    {
-        $user = session('user');
+{
+    $user = session('user');
 
-        if (!$user) {
-            return redirect()->route('baiviet.index')->with('error', 'Cần đăng nhập để viết đánh giá.');
-        }
-
-        $request->validate([
-            'diem_danh_gia'   => 'required|integer|min:1|max:5',
-            'binh_luan'       => 'required|string',
-            'duong_dan_anh.*' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048'
-        ]);
-
-        $baiViet = BaiViet::findOrFail($ma_bai_viet);
-
-        // Tạo đánh giá
-        $danhGia = DanhGia::create([
-            'ma_bai_viet'    => $ma_bai_viet,
-            'ma_nguoi_dung'  => $user->ma_nguoi_dung,
-            'ma_nha_hang'    => $baiViet->ma_nha_hang,
-            'diem_danh_gia'  => $request->diem_danh_gia,
-            'binh_luan'      => $request->binh_luan,
-            'thoi_gian_tao'  => now(),
-        ]);
-
-        /**
-         * Lưu ảnh nếu có —> Lưu nhiều ảnh thành chuỗi
-         * uploads/danhgia/xxxx.jpg,uploads/danhgia/yyy.jpg,...
-         */
-        if ($request->hasFile('duong_dan_anh')) {
-            $paths = [];
-
-            foreach ($request->file('duong_dan_anh') as $file) {
-                $paths[] = $file->store('uploads/danhgia', 'public');
-            }
-
-            $danhGia->duong_dan_anh = implode(',', $paths);
-            $danhGia->save();
-        }
-
-        return redirect()->route('danhgia.index', $ma_bai_viet)
-            ->with('success', 'Đánh giá đã được gửi!');
+    if (!$user) {
+        return redirect()->route('baiviet.index')->with('error', 'Cần đăng nhập để viết đánh giá.');
     }
+
+    $request->validate([
+        'diem_danh_gia'   => 'required|integer|min:1|max:5',
+        'binh_luan'       => 'required|string',
+        'duong_dan_anh.*' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048'
+    ]);
+
+    $baiViet = BaiViet::findOrFail($ma_bai_viet);
+
+    // Tạo đánh giá
+    $danhGia = DanhGia::create([
+    'ma_nguoi_dung'  => $user->ma_nguoi_dung,
+    'ma_nha_hang'    => $baiViet->ma_nha_hang,
+    'diem_danh_gia'  => $request->diem_danh_gia,
+    'binh_luan'      => $request->binh_luan,
+    'thoi_gian_tao'  => now(),
+    'duong_dan_anh'  => null,
+]);
+
+    /**
+     * Lưu ảnh vào thư mục public/uploads/danhgia
+     */
+    if ($request->hasFile('duong_dan_anh')) {
+
+        $savedPaths = [];
+
+        foreach ($request->file('duong_dan_anh') as $file) {
+
+            $filename = time() . "_" . uniqid() . "." . $file->getClientOriginalExtension();
+
+            // Lưu vào PUBLIC chứ không phải STORAGE
+            $file->move(public_path('uploads/danhgia'), $filename);
+
+            // Lưu đường dẫn cho database
+            $savedPaths[] = 'uploads/danhgia/' . $filename;
+        }
+
+        $danhGia->duong_dan_anh = implode(',', $savedPaths);
+        $danhGia->save();
+    }
+
+    return redirect()
+        ->route('danhgia.index', $ma_bai_viet)
+        ->with('success', 'Đánh giá đã được gửi!');
+}
+
 
     /**
      * Danh sách đánh giá cho nhà hàng

@@ -3,12 +3,17 @@
 use App\Http\Controllers\DanhGiaController;
 use App\Http\Controllers\LuotThichController;
 use App\Http\Controllers\NhaHangController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TheoDoiController;
+use App\Http\Controllers\TinNhanController;
 use App\Http\Controllers\TrangCaNhanController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BaiVietController;
+use App\Http\Controllers\LuuBaiVietController;
+
 
 use App\Http\Controllers\HomeController;
 
@@ -19,13 +24,19 @@ Route::get('/', action: [HomeController::class, 'index'])->name('home');
 Route::get('baiviet', [BaiVietController::class, 'index'])->name('baiviet.index');
 Route::get('baiviet/create', [BaiVietController::class, 'create'])->name('baiviet.create');
 Route::post('baiviet', [BaiVietController::class, 'store'])->name(name: 'baiviet.store');
-Route::get('baiviet/{id}', [BaiVietController::class, 'show'])->name('baiviet.show');
-Route::get('baiviet/{id}/edit', [BaiVietController::class, 'edit'])->name('baiviet.edit');
+// ĐẶT /edit trước /{id}
+ Route::get('/{id}/edit', [BaiVietController::class, 'edit'])->name('baiviet.edit-bv');
+// Xóa ảnh bài viết riêng lẻ
+Route::delete('/anh/{id}', [BaiVietController::class, 'xoaAnh'])->name('baiviet.xoaAnh');
+
 Route::put('baiviet/{id}', [BaiVietController::class, 'update'])->name('baiviet.update');
+    //Route::post('/{id}/save', [BaiVietController::class, 'save'])->name('baiviet.save');
+
 Route::delete('baiviet/{id}', [BaiVietController::class, 'destroy'])->name('baiviet.destroy');
 
 //like
 Route::post('/baiviet/like/{id}', [LuotThichController::class, 'toggleLike'])->name('baiviet.like');
+Route::get('baiviet/{id}', [BaiVietController::class, 'show'])->name('baiviet.show');
 
 
 // Đăng ký
@@ -42,11 +53,16 @@ Route::get('logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Trang cá nhân
-Route::prefix('trangcanhan')->name('trangcanhan.')->group(function () {
-    Route::get('/', [TrangCaNhanController::class, 'showProfile'])->name('index');
-    Route::get('/edit', [TrangCaNhanController::class, 'showSetupForm'])->name('edit');
-    Route::post('/edit', [TrangCaNhanController::class, 'saveSetup'])->name('update');
-});
+
+// Hiển thị profile
+Route::get('/trangcanhan', [TrangCaNhanController::class, 'showProfile'])->name('trangcanhan.index');
+
+// Hiển thị form chỉnh sửa
+Route::get('/trangcanhan/setup', [TrangCaNhanController::class, 'showSetupForm'])->name('trangcanhan.edit');
+
+// Lưu thay đổi
+Route::post('/trangcanhan/setup', [TrangCaNhanController::class, 'saveSetup'])->name('trangcanhan.saveSetup');
+
 
 
 
@@ -83,3 +99,28 @@ Route::get('/danhgia/nha-hang/{ma_nha_hang}', [DanhGiaController::class, 'indexN
 // Like đánh giá
 Route::post('/danhgia/like/{ma_danh_gia}', [DanhGiaController::class, 'like'])->name('danhgia.like');
 
+
+// Toggle lưu bài viết
+Route::post('/baiviet/save/{id}', [LuuBaiVietController::class, 'toggle'])->name('baiviet.save');
+
+// Danh sách bài viết đã lưu
+Route::get('/luu-bai-viet', [LuuBaiVietController::class, 'index'])->name('luu_baiviet.index');
+
+//theo dõi
+Route::get('/follow/{id}', [TheoDoiController::class, 'follow'])->name('follow');
+    Route::get('/unfollow/{id}', [TheoDoiController::class, 'unfollow'])->name('unfollow');
+ // Theo dõi nhà hàng
+Route::get('/follow/nhahang/{id}', [TheoDoiController::class, 'followNhaHang'])->name('follow.nhahang');
+Route::get('/unfollow/nhahang/{id}', [TheoDoiController::class, 'unfollowNhaHang'])->name('unfollow.nhahang');
+
+
+
+
+// Trang danh sách các cuộc trò chuyện
+Route::get('/nhan-tin', [TinNhanController::class, 'index'])->name('nhantin.index');
+
+// Xem chi tiết tin nhắn giữa 2 người
+Route::get('/nhan-tin/{nguoiNhanId}', [TinNhanController::class, 'show'])->name('nhantin.show');
+
+// Gửi tin nhắn
+Route::post('/nhan-tin', [TinNhanController::class, 'store'])->name('nhantin.store');

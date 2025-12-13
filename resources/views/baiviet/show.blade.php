@@ -64,7 +64,7 @@
                        class="btn btn-primary">
                         💬 Đánh giá
                         <span class="badge bg-light text-dark">
-                            {{ $baiViet->danhGias->count() }}
+                            {{ $baiViet->danhGias()->count() }}
                         </span>
                     </a>
 

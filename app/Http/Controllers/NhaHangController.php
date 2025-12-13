@@ -193,4 +193,5 @@ class NhaHangController extends Controller
 
         return redirect()->route('nhahang.index')->with('success', 'Xóa thành công!');
     }
+    
 }

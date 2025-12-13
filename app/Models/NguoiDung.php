@@ -27,27 +27,33 @@ class NguoiDung extends Model
         return $this->hasMany(BaiViet::class, 'ma_nguoi_dang', 'ma_nguoi_dung');
     }
 
-    // Người theo dõi
-    public function followers()
-{
-    // Những người theo dõi bạn
-    return $this->belongsToMany(
-        NguoiDung::class,
-        'theo_doi',                // Tên bảng
-        'ma_nguoi_duoc_theo_doi',  // foreign key của user hiện tại trên bảng theo_doi
-        'ma_nguoi_dung'            // foreign key của người theo dõi
-    );
-}
+    
 
-public function following()
-{
-    // Những người bạn đang theo dõi
+    // Quan hệ với đánh giá
+    public function danhGias()
+    {
+        return $this->hasMany(DanhGia::class, 'ma_nguoi_dung', 'ma_nguoi_dung');
+    }
+    // Người theo dõi
+  // Những người mà tôi đang theo dõi
+public function following() {
     return $this->belongsToMany(
         NguoiDung::class,
         'theo_doi',
-        'ma_nguoi_dung',           // foreign key của user hiện tại trên bảng theo_doi
-        'ma_nguoi_duoc_theo_doi'   // foreign key của người được theo dõi
+        'ma_nguoi_dung',
+        'ma_nguoi_duoc_theo_doi'
     );
 }
+
+// Những người đang theo dõi tôi
+public function followers() {
+    return $this->belongsToMany(
+        NguoiDung::class,
+        'theo_doi',
+        'ma_nguoi_duoc_theo_doi',
+        'ma_nguoi_dung'
+    );
+}
+
 
 }

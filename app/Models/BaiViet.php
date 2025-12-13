@@ -13,6 +13,10 @@ class BaiViet extends Model
     protected $primaryKey = 'ma_bai_viet';
     public $timestamps = false;
 
+    protected $casts = [
+    'thoi_gian_tao' => 'datetime',
+];
+
     protected $fillable = [
         'ma_nha_hang',
         'ma_nguoi_dang',
@@ -29,29 +33,20 @@ class BaiViet extends Model
     public function nhaHang() {
         return $this->belongsTo(NhaHang::class, 'ma_nha_hang', 'ma_nha_hang');
     }
-
+   
     // Quan hệ với ảnh bài viết
     public function anhBaiViets() {
         return $this->hasMany(AnhBaiViet::class, 'ma_bai_viet', 'ma_bai_viet');
     }
 
     // Quan hệ đánh giá thông qua nhà hàng
-    public function danhGias()
-    {
-        return $this->hasManyThrough(
-            \App\Models\DanhGia::class,
-            \App\Models\NhaHang::class,
-            'ma_nha_hang', // khóa ngoại NhaHang trong bảng DanhGia
-            'ma_nha_hang', // khóa ngoại trong bảng DanhGia
-            'ma_nha_hang', // khóa chính BaiViet → NhaHang
-            'ma_nha_hang'
-        );
-    }
+   public function danhGias()
+{
+    return $this->hasMany(DanhGia::class, 'ma_bai_viet', 'ma_bai_viet');
+}
+
 
     // Quan hệ tương tác
-    public function tuongTacs() {
-        return $this->hasMany(TuongTac::class, 'ma_bai_viet', 'ma_bai_viet');
-    }
 
     public function luotThichs() {
         return $this->hasMany(LuotThich::class, 'bai_viet_id', 'ma_bai_viet');

@@ -3,24 +3,30 @@
         <div class="col-lg-6 col-md-12 mb-4">
             <div class="card shadow-sm h-100">
 
-                {{-- ===============================
-                    HIỂN THỊ CAROUSEL ẢNH BÀI VIẾT
-                ================================ --}}
+                {{-- Carousel ảnh/video --}}
                 @if($bv->anhBaiViets && $bv->anhBaiViets->count() > 0)
                     <div id="carouselBaiViet{{ $bv->ma_bai_viet }}" class="carousel slide" data-bs-ride="carousel">
                         <div class="carousel-inner" style="height: 300px;">
+                            @foreach($bv->anhBaiViets as $index => $media)
+                                <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                    @php
+                                        $ext = pathinfo($media->duong_dan_anh, PATHINFO_EXTENSION);
+                                    @endphp
 
-                            {{-- Duyệt ảnh và đánh dấu ảnh đầu tiên là active --}}
-                            @foreach($bv->anhBaiViets as $index => $anh)
-                                <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
-                                    <img src="{{ asset($anh->duong_dan_anh) }}" 
-                                         class="d-block w-100"
-                                         style="object-fit: cover; height: 300px;">
+                                    @if(in_array(strtolower($ext), ['mp4','webm','ogg']))
+                                        <video class="d-block w-100" controls style="height:300px; object-fit:cover;">
+                                            <source src="{{ asset($media->duong_dan_anh) }}" type="video/{{ $ext }}">
+                                            Trình duyệt của bạn không hỗ trợ video.
+                                        </video>
+                                    @else
+                                        <img src="{{ asset($media->duong_dan_anh) }}" 
+                                             class="d-block w-100" 
+                                             style="height:300px; object-fit:cover;">
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
 
-                        {{-- Nút điều hướng carousel (nếu có nhiều ảnh) --}}
                         @if($bv->anhBaiViets->count() > 1)
                             <button class="carousel-control-prev" type="button" data-bs-target="#carouselBaiViet{{ $bv->ma_bai_viet }}" data-bs-slide="prev">
                                 <span class="carousel-control-prev-icon"></span>
@@ -31,81 +37,81 @@
                         @endif
                     </div>
                 @else
-                    {{-- Nếu bài viết không có ảnh → hiện ảnh placeholder --}}
-                    <img src="https://via.placeholder.com/600x300?text=No+Image" 
-                         class="card-img-top"
-                         style="object-fit: cover; height: 300px;">
+                    <img src="https://via.placeholder.com/600x300?text=No+Media" 
+                         class="card-img-top" 
+                         style="height:300px; object-fit:cover;">
                 @endif
 
+                {{-- Body bài viết --}}
                 <div class="card-body d-flex flex-column mt-2">
 
-                    {{-- ============================================
-                        PHẦN HEADER: AVATAR + TÊN NHÀ HÀNG (CLICKABLE)
-                        ============================================ --}}
+                    {{-- Header: Avatar + tên nhà hàng --}}
+                    @php
+                        $avatar = $bv->nhaHang?->anh_dai_dien ?? $bv->nguoiDang?->anh_dai_dien ?? 'https://via.placeholder.com/40';
+                        $tenNhaHang = $bv->nhaHang?->ten_nha_hang ?? 'Nhà hàng';
+                        $maNhaHang = $bv->nhaHang?->ma_nha_hang;
+                    @endphp
                     <div class="d-flex align-items-center mb-2">
-
-                        @php
-                            // Ưu tiên ảnh đại diện của nhà hàng
-                            if (!empty($bv->nhaHang?->anh_dai_dien)) {
-                                $avatar = asset('storage/' . $bv->nhaHang->anh_dai_dien);
-                            }
-                            // Nếu nhà hàng không có ảnh → dùng avatar người đăng
-                            elseif (!empty($bv->nguoiDang?->avatar)) {
-                                $avatar = asset('storage/' . $bv->nguoiDang->avatar);
-                            }
-                            // Không có avatar → ảnh mặc định
-                            else {
-                                $avatar = 'https://via.placeholder.com/40';
-                            }
-                        @endphp
-
-                        {{-- CLICK VÀO ẢNH → ĐI ĐẾN TRANG CHI TIẾT NHÀ HÀNG --}}
-                        <a href="{{ route('nhahang.show', $bv->ma_nha_hang) }}">
-                            <img src="{{ $avatar }}" 
-                                 class="rounded-circle me-2" 
-                                 width="40" 
-                                 height="40"
-                                 style="object-fit: cover;">
-                        </a>
-
-                        <div>
-
-                            {{-- CLICK VÀO TÊN NHÀ HÀNG → ĐI ĐẾN TRANG CHI TIẾT --}}
-                            <a href="{{ route('nhahang.show', $bv->ma_nha_hang) }}"
-                               class="text-decoration-none text-dark">
-                                <h6 class="mb-0">
-                                    {{ $bv->nhaHang->ten_nha_hang ?? 'Nhà hàng' }}
-                                </h6>
+                        @if($maNhaHang)
+                            <a href="{{ route('nhahang.show', $maNhaHang) }}">
+                                <img src="{{ asset('storage/'.$avatar) }}" class="rounded-circle me-2" width="40" height="40" style="object-fit:cover;">
                             </a>
-
-                            {{-- Thời gian đăng bài --}}
-                            <small class="text-muted">
-                                {{ $bv->thoi_gian_tao ? \Carbon\Carbon::parse($bv->thoi_gian_tao)->format('d/m/Y H:i') : '' }}
-                            </small>
+                        @else
+                            <img src="{{ asset($avatar) }}" class="rounded-circle me-2" width="40" height="40" style="object-fit:cover;">
+                        @endif
+                        <div>
+                            @if($maNhaHang)
+                                <a href="{{ route('nhahang.show', $maNhaHang) }}" class="text-decoration-none text-dark">
+                                    <h6 class="mb-0">{{ $tenNhaHang }}</h6>
+                                </a>
+                            @else
+                                <h6 class="mb-0">{{ $tenNhaHang }}</h6>
+                            @endif
+                            <small class="text-muted">{{ $bv->thoi_gian_tao ? \Carbon\Carbon::parse($bv->thoi_gian_tao)->format('d/m/Y H:i') : '' }}</small>
                         </div>
                     </div>
 
-                    {{-- ================================
-                        NỘI DUNG RÚT GỌN CỦA BÀI VIẾT
-                    ================================= --}}
-                    <p class="card-text mb-3">
-                        {{ Str::limit($bv->noi_dung ?? '', 120) }}
-                    </p>
+                    {{-- Nội dung --}}
+                    <p class="card-text mb-3">{{ Str::limit($bv->noi_dung ?? '', 120) }}</p>
 
-                    {{-- ================================
-                        NÚT XEM CHI TIẾT BÀI VIẾT
-                    ================================= --}}
-                    <a href="{{ route('baiviet.show', $bv->ma_bai_viet) }}" 
-                       class="btn btn-outline-primary mt-auto">
-                        Xem chi tiết
-                    </a>
+                    {{-- Nút hành động --}}
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                        @php
+                            $currentUser = session('user');
+                            $isOwner = $currentUser 
+                                       && $currentUser->vai_tro === 'chu_quan' 
+                                       && $currentUser->ma_nguoi_dung === $bv->ma_nguoi_dang;
+                        @endphp
+
+                        @if($isOwner)
+                            <div class="btn-group">
+                                <a href="{{ route('baiviet.edit-bv', $bv->ma_bai_viet) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Sửa
+                                </a>
+                                <form action="{{ route('baiviet.destroy', $bv->ma_bai_viet) }}" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa bài viết này?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash-alt"></i> Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        @else
+                            <form action="{{ route('baiviet.save', $bv->ma_bai_viet) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="far fa-bookmark"></i> Lưu bài viết
+                                </button>
+                            </form>
+                        @endif
+
+                        <a href="{{ route('baiviet.show', $bv->ma_bai_viet) }}" class="btn btn-sm btn-outline-primary">Xem chi tiết</a>
+                    </div>
 
                 </div>
             </div>
         </div>
-
     @empty
-        {{-- Nếu không có bài viết nào --}}
         <div class="col-12 text-center py-5">
             <p class="text-muted">Chưa có bài viết nào.</p>
         </div>

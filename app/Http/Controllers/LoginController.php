@@ -32,6 +32,8 @@ class LoginController extends Controller
         // Lưu session user
         Session::put('user', $user);
         Session::put('ma_nguoi_dung', $user->ma_nguoi_dung);
+        Session::put('user_role', $user->vai_tro); // thêm dòng này
+
 
         return redirect()->route('home')->with('success', 'Đăng nhập thành công!');
     }
