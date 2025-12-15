@@ -57,30 +57,22 @@ class TrangCaNhanController extends Controller
     // UPLOAD AVATAR NGƯỜI DÙNG
     // ================================
     if ($request->hasFile('anh_dai_dien')) {
-
-        // 🗑️ Xóa avatar cũ nếu tồn tại
-        if ($user->anh_dai_dien && File::exists(public_path($user->anh_dai_dien))) {
-            File::delete(public_path($user->anh_dai_dien));
-        }
-
-        // 📁 Thư mục upload avatar người dùng
-        $uploadPath = public_path('uploads/anh_nguoi_dung');
-
-        // Tạo thư mục nếu chưa có
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0755, true);
-        }
-
-        // 📸 Tạo tên file an toàn
-        $file = $request->file('anh_dai_dien');
-        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-        // 📥 Lưu file vào public/uploads/anh_nguoi_dung
-        $file->move($uploadPath, $fileName);
-
-        // 💾 Lưu đường dẫn tương đối vào DB
-        $user->anh_dai_dien = 'uploads/anh_nguoi_dung/' . $fileName;
+    if ($user->anh_dai_dien && File::exists(public_path($user->anh_dai_dien))) {
+        File::delete(public_path($user->anh_dai_dien));
     }
+
+    $uploadPath = public_path('uploads/anh_nguoi_dung');
+    if (!File::exists($uploadPath)) {
+        File::makeDirectory($uploadPath, 0755, true);
+    }
+
+    $file = $request->file('anh_dai_dien');
+    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    $file->move($uploadPath, $fileName);
+
+    $user->anh_dai_dien = 'uploads/anh_nguoi_dung/' . $fileName;
+}
+
 
     // Lưu dữ liệu
     $user->save();

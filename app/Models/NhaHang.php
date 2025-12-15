@@ -55,4 +55,12 @@ class NhaHang extends Model
     {
         return $this->hasMany(DanhGia::class, 'ma_nha_hang', 'ma_nha_hang');
     }
+    public function tinNhans()
+    {
+        return $this->hasMany(
+            TinNhan::class,
+            'ma_nha_hang',
+            'ma_nha_hang'
+        );
+    }
 }

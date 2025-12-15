@@ -84,8 +84,9 @@
 
         {{-- Giờ mở cửa --}}
         <div class="mb-3">
-            <label for="gio_mo_cua" class="form-label">Giờ Mở Cửa</label>
-            <input type="text" name="gio_mo_cua" id="gio_mo_cua" class="form-control" value="{{ old('gio_mo_cua') }}">
+            <label>Giờ mở cửa</label>
+            <input type="text" name="gio_mo_cua" class="form-control" placeholder="08:00 - 22:00" value="{{ old('gio_mo_cua', $nhaHang->gio_mo_cua ?? '') }}">
+
         </div>
 
         {{-- Ảnh đại diện --}}

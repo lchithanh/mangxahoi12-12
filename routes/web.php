@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DanhGiaController;
+use App\Http\Controllers\KhuVucController;
 use App\Http\Controllers\LuotThichController;
 use App\Http\Controllers\NhaHangController;
 use App\Http\Controllers\SearchController;
@@ -85,16 +86,15 @@ Route::prefix('nhahang')->name('nhahang.')->group(function () {
 
 
 
-// Viết đánh giá
-Route::get('danhgia/create/{ma_bai_viet}', [DanhGiaController::class, 'create'])->name('danhgia.create');
-Route::post('danhgia/store/{ma_bai_viet}', [DanhGiaController::class, 'store'])->name('danhgia.store');
+// Danh sách đánh giá bài viết
 Route::get('danhgia/index/{ma_bai_viet}', [DanhGiaController::class, 'index'])->name('danhgia.index');
-Route::get('/danhgia/nha-hang/{ma_nha_hang}', [DanhGiaController::class, 'indexNhaHang'])->name('danhgia.index');
-Route::post('/danhgia/like/{ma_danh_gia}', [DanhGiaController::class, 'like'])->name('danhgia.like');
-
 
 // Danh sách đánh giá nhà hàng
-Route::get('/danhgia/nha-hang/{ma_nha_hang}', [DanhGiaController::class, 'indexNhaHang'])->name('danhgia.index');
+Route::get('/danhgia/nha-hang/{ma_nha_hang}', [DanhGiaController::class, 'indexNhaHang'])->name('danhgia.indexNhaHang');
+
+// Form tạo đánh giá
+Route::get('danhgia/create/{ma_bai_viet}', [DanhGiaController::class, 'create'])->name('danhgia.create');
+Route::post('danhgia/store/{ma_bai_viet}', [DanhGiaController::class, 'store'])->name('danhgia.store');
 
 // Like đánh giá
 Route::post('/danhgia/like/{ma_danh_gia}', [DanhGiaController::class, 'like'])->name('danhgia.like');
@@ -114,13 +114,13 @@ Route::get('/follow/nhahang/{id}', [TheoDoiController::class, 'followNhaHang'])-
 Route::get('/unfollow/nhahang/{id}', [TheoDoiController::class, 'unfollowNhaHang'])->name('unfollow.nhahang');
 
 
+Route::get('/tin-nhan', [TinNhanController::class, 'index'])->name('tinnhan.index');
+Route::get('/nha-hang/{id}/chat', [TinNhanController::class, 'show'])->name('tinnhan.show');
+Route::post('/tin-nhan', [TinNhanController::class, 'store'])->name('tinnhan.store');
+
+// API realtime (polling)
+Route::get('/tin-nhan/fetch/{maNhaHang}', [TinNhanController::class, 'fetch'])
+    ->name('tinnhan.fetch');
 
 
-// Trang danh sách các cuộc trò chuyện
-Route::get('/nhan-tin', [TinNhanController::class, 'index'])->name('nhantin.index');
-
-// Xem chi tiết tin nhắn giữa 2 người
-Route::get('/nhan-tin/{nguoiNhanId}', [TinNhanController::class, 'show'])->name('nhantin.show');
-
-// Gửi tin nhắn
-Route::post('/nhan-tin', [TinNhanController::class, 'store'])->name('nhantin.store');
+Route::resource('khuvuc', KhuVucController::class);

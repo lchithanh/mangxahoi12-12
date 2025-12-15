@@ -10,36 +10,43 @@ class TinNhan extends Model
     use HasFactory;
 
     protected $table = 'tin_nhan';
-    protected $primaryKey = 'id';
-    public $timestamps = true; // enable để Laravel tự động quản lý created_at, updated_at
+
+    protected $primaryKey = 'ma_tin_nhan'; // ✅ ĐÚNG DB
+
+    public $timestamps = true; // ✅ DB có created_at
 
     protected $fillable = [
-        'nguoi_gui_id',
-        'nha_hang_gui_id',
-        'nguoi_nhan_id',
-        'nha_hang_nhan_id',
+        'ma_nha_hang',
+        'ma_nguoi_gui',
         'noi_dung',
         'da_doc',
     ];
 
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONSHIPS
+    |--------------------------------------------------------------------------
+    */
+
+    // Tin nhắn thuộc về 1 nhà hàng
+    public function nhaHang()
+    {
+        return $this->belongsTo(
+            \App\Models\NhaHang::class,
+            'ma_nha_hang',
+            'ma_nha_hang'
+        );
+    }
+
+    // Người gửi (chỉ có khi user gửi)
     public function nguoiGui()
     {
-        return $this->belongsTo(\App\Models\NguoiDung::class, 'nguoi_gui_id', 'ma_nguoi_dung');
-    }
-
-    public function nguoiNhan()
-    {
-        return $this->belongsTo(\App\Models\NguoiDung::class, 'nguoi_nhan_id', 'ma_nguoi_dung');
-    }
-
-    public function scopeTinNhanGiuaHaiNguoi($query, $user1, $user2)
-    {
-        return $query->where(function($q) use ($user1, $user2) {
-            $q->where('nguoi_gui_id', $user1)
-              ->where('nguoi_nhan_id', $user2);
-        })->orWhere(function($q) use ($user1, $user2) {
-            $q->where('nguoi_gui_id', $user2)
-              ->where('nguoi_nhan_id', $user1);
-        })->orderBy('created_at', 'asc');
+        return $this->belongsTo(
+            \App\Models\NguoiDung::class,
+            'ma_nguoi_gui',
+            'ma_nguoi_dung'
+        );
     }
 }

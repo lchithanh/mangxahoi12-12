@@ -18,48 +18,54 @@ class BaiVietController extends Controller
      * =====================================================
      */
     public function index()
-    {
-        $user = session('user');
+{
+    $user = session('user');
 
-        // Nếu là chủ quán
-        if ($user && trim($user->vai_tro) === 'chu_quan') {
+    // Nếu là chủ quán
+    if ($user && trim($user->vai_tro) === 'chu_quan') {
 
-            // Lấy danh sách nhà hàng của chủ quán
-            $nhahangs = NhaHang::where('ma_chu_so_huu', $user->ma_nguoi_dung)
-                ->pluck('ma_nha_hang');
+        // Lấy danh sách nhà hàng của chủ quán
+        $nhahangs = NhaHang::where('ma_chu_so_huu', $user->ma_nguoi_dung)
+            ->pluck('ma_nha_hang');
 
-            // Nếu chưa có nhà hàng thì không có bài viết
-            $baiviets = $nhahangs->isEmpty()
-                ? collect()
-                : BaiViet::with(['nguoiDang', 'anhBaiViets'])
-                    ->whereIn('ma_nha_hang', $nhahangs)
-                    ->orderByDesc('thoi_gian_tao')
-                    ->get();
-        }
-        // Người dùng thường
-        else {
-            $baiviets = BaiViet::with(['nguoiDang', 'anhBaiViets'])
-                ->orderByDesc('thoi_gian_tao')
+        // Nếu chưa có nhà hàng thì không có bài viết
+        $baiviets = $nhahangs->isEmpty()
+            ? collect()
+            : BaiViet::with(['nguoiDang', 'anhBaiViets'])
+                ->whereIn('ma_nha_hang', $nhahangs)
+                ->orderByDesc('thoi_gian_tao')   // ưu tiên mới nhất
+                ->orderByDesc('ma_bai_viet')     // nếu trùng thời gian
                 ->get();
-        }
-
-        return view('baiviet.index', compact('baiviets', 'user'));
     }
+    // Người dùng thường
+    else {
+        $baiviets = BaiViet::with(['nguoiDang', 'anhBaiViets'])
+            ->orderByDesc('thoi_gian_tao')
+            ->orderByDesc('ma_bai_viet')
+            ->get();
+    }
+
+    return view('baiviet.index', compact('baiviets', 'user'));
+}
+
 
     /**
      * =====================================================
      * XEM CHI TIẾT BÀI VIẾT
      * =====================================================
      */
-    public function show($id)
-    {
-        $user = session('user');
+   public function show($id)
+{
+    $user = session('user');
 
-        $baiViet = BaiViet::with(['nguoiDang', 'nhaHang', 'anhBaiViets'])
-            ->findOrFail($id);
+    $baiViet = BaiViet::with(['nguoiDang', 'nhaHang', 'anhBaiViets'])
+        ->findOrFail($id);
 
-        return view('baiviet.show', compact('baiViet', 'user'));
-    }
+    // Tạo collection 1 phần tử để dùng lại list.blade.php
+    $baiviets = collect([$baiViet]);
+
+    return view('baiviet.show', compact('baiViet', 'baiviets', 'user'));
+}
 
     /**
      * =====================================================
