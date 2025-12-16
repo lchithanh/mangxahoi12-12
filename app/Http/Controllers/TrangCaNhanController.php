@@ -16,7 +16,7 @@ class TrangCaNhanController extends Controller
      */
     public function showSetupForm()
     {
-        $user = NguoiDung::find(session('ma_nguoi_dung'));
+        $user = session('user');
 
         if (!$user) {
             return redirect()->route('login');
@@ -28,86 +28,92 @@ class TrangCaNhanController extends Controller
     /**
      * =====================================================
      * LƯU CẬP NHẬT PROFILE
-     * - Không dùng storage
-     * - Upload avatar vào public/uploads/anh_nguoi_dung
      * =====================================================
      */
     public function saveSetup(Request $request)
-{
-    $user = NguoiDung::find(session('ma_nguoi_dung'));
-
-    if (!$user) {
-        return redirect()->route('login');
-    }
-
-    // ✅ Validate dữ liệu
-    $request->validate([
-        'ho_ten' => 'required|string|max:255',
-        'email' => 'required|email|max:255|unique:nguoi_dung,email,' . $user->ma_nguoi_dung . ',ma_nguoi_dung',
-        'gioi_thieu' => 'nullable|string|max:1000',
-        'anh_dai_dien' => 'nullable|image|max:2048',
-    ]);
-
-    // Cập nhật thông tin cơ bản
-    $user->ho_ten = $request->ho_ten;
-    $user->email = $request->email;
-    $user->gioi_thieu = $request->gioi_thieu;
-
-    // ================================
-    // UPLOAD AVATAR NGƯỜI DÙNG
-    // ================================
-    if ($request->hasFile('anh_dai_dien')) {
-    if ($user->anh_dai_dien && File::exists(public_path($user->anh_dai_dien))) {
-        File::delete(public_path($user->anh_dai_dien));
-    }
-
-    $uploadPath = public_path('uploads/anh_nguoi_dung');
-    if (!File::exists($uploadPath)) {
-        File::makeDirectory($uploadPath, 0755, true);
-    }
-
-    $file = $request->file('anh_dai_dien');
-    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-    $file->move($uploadPath, $fileName);
-
-    $user->anh_dai_dien = 'uploads/anh_nguoi_dung/' . $fileName;
-}
-
-
-    // Lưu dữ liệu
-    $user->save();
-
-    return redirect()
-        ->route('trangcanhan.index')
-        ->with('success', '✅ Cập nhật thông tin cá nhân thành công');
-}
-
-
-
-    /**
-     * =====================================================
-     * HIỂN THỊ TRANG CÁ NHÂN
-     * - Phân biệt chủ quán / người dùng thường
-     * =====================================================
-     */
-    public function showProfile()
     {
-        $user = NguoiDung::withCount('baiviets')
-            ->with(['baiviets.anhBaiViets'])
-            ->find(session('ma_nguoi_dung'));
+        $user = session('user');
 
         if (!$user) {
             return redirect()->route('login');
         }
 
+        // 🔁 Lấy user mới nhất từ DB
+        $user = NguoiDung::findOrFail($user->ma_nguoi_dung);
+
+        // ✅ Validate
+        $request->validate([
+            'ho_ten'        => 'required|string|max:255',
+            'email'         => 'required|email|max:255|unique:nguoi_dung,email,' . $user->ma_nguoi_dung . ',ma_nguoi_dung',
+            'gioi_thieu'    => 'nullable|string|max:1000',
+            'anh_dai_dien'  => 'nullable|image|max:2048',
+        ]);
+
+        // Update thông tin
+        $user->update([
+            'ho_ten'      => $request->ho_ten,
+            'email'       => $request->email,
+            'gioi_thieu'  => $request->gioi_thieu,
+        ]);
+
+        /**
+         * ============================
+         * UPLOAD AVATAR
+         * ============================
+         */
+        if ($request->hasFile('anh_dai_dien')) {
+
+            if ($user->anh_dai_dien && File::exists(public_path($user->anh_dai_dien))) {
+                File::delete(public_path($user->anh_dai_dien));
+            }
+
+            $path = public_path('uploads/anh_nguoi_dung');
+            if (!File::exists($path)) {
+                File::makeDirectory($path, 0755, true);
+            }
+
+            $file = $request->file('anh_dai_dien');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move($path, $fileName);
+
+            $user->anh_dai_dien = 'uploads/anh_nguoi_dung/' . $fileName;
+            $user->save();
+        }
+
+        // 🔁 CẬP NHẬT LẠI SESSION USER
+        session(['user' => $user]);
+
+        return redirect()
+            ->route('trangcanhan.index')
+            ->with('success', '✅ Cập nhật thông tin cá nhân thành công');
+    }
+
+    /**
+     * =====================================================
+     * HIỂN THỊ TRANG CÁ NHÂN
+     * =====================================================
+     */
+    public function showProfile()
+    {
+        $userSession = session('user');
+
+        if (!$userSession) {
+            return redirect()->route('login');
+        }
+
+        $user = NguoiDung::withCount('baiviets')
+            ->with(['baiviets.anhBaiViets'])
+            ->findOrFail($userSession->ma_nguoi_dung);
+
         // 👥 Followers / Following
         $user->followers_count = $user->followers()->count();
         $user->following_count = $user->following()->count();
 
+        
         /**
-         * ================================
+         * ============================
          * TRANG CÁ NHÂN CHỦ QUÁN
-         * ================================
+         * ============================
          */
         if ($user->vai_tro === 'chu_quan') {
 
@@ -115,20 +121,27 @@ class TrangCaNhanController extends Controller
                 ->with('baiViets.anhBaiViets')
                 ->get();
 
-            // Hiển thị danh sách nhà hàng nếu >= 2
             $showDanhSach = $nhaHangs->count() >= 2;
+
+            // Lấy danh sách đánh giá mà chủ quán đã gửi cho các bài viết khác
+            $danhGias = \App\Models\DanhGia::with('baiViet.nhaHang')
+                ->where('ma_nguoi_dung', $user->ma_nguoi_dung)
+                ->orderByDesc('thoi_gian_tao')
+                ->get();
 
             return view('trangcanhan.owner', compact(
                 'user',
                 'nhaHangs',
-                'showDanhSach'
+                'showDanhSach',
+                'danhGias'   // 🔹 thêm dòng này
             ));
         }
 
+
         /**
-         * ================================
-         * TRANG CÁ NHÂN NGƯỜI DÙNG THƯỜNG
-         * ================================
+         * ============================
+         * TRANG CÁ NHÂN NGƯỜI DÙNG
+         * ============================
          */
         $danhGias = $user->danhGias()
             ->with('baiViet.nhaHang')

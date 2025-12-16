@@ -1,6 +1,7 @@
 <?php  
 namespace App\Http\Controllers;
 
+use App\Models\ThongBao;
 use Illuminate\Http\Request;
 use App\Models\DanhGia;
 use App\Models\BaiViet;
@@ -68,9 +69,52 @@ class DanhGiaController extends Controller
             $danhGia->duong_dan_anh = implode(',', $savedPaths);
             $danhGia->save();
         }
+        ThongBao::create([
+            'ma_nguoi_nhan' => $baiViet->ma_nguoi_dang,
+            'ma_nguoi_gui'  => $user->ma_nguoi_dung,
+            'loai_thong_bao'=> 'danh_gia',
+            'ma_doi_tuong'  => $baiViet->ma_bai_viet,
+            'noi_dung'      => $user->ho_ten .'đã đánh giá bài viết của bạn',
+            'da_doc'        => 0,
+            'thoi_gian_tao' => now(),
+        ]);
 
         // Redirect về index ngay lập tức với đánh giá mới
         return redirect()->route('danhgia.index', $ma_bai_viet)
                          ->with('success', 'Đánh giá đã được gửi!');
     }
+    public function list($ma_bai_viet, Request $request)
+{
+    $baiViet = BaiViet::findOrFail($ma_bai_viet);
+
+    $query = $baiViet->danhGias()->with('nguoiDung');
+
+    // Filter nếu muốn: điểm đánh giá
+    if ($request->filled('diem')) {
+        $query->where('diem_danh_gia', $request->diem);
+    }
+
+    // Filter theo khu vực của người dùng đánh giá
+    if ($request->filled('district')) {
+        $query->whereHas('nguoiDung', function($q) use ($request){
+            $q->where('ma_khu_vuc', $request->district);
+        });
+    }
+
+    // Sắp xếp
+    if ($request->filled('sort')) {
+        if ($request->sort === '5to1') $query->orderByDesc('diem_danh_gia');
+        elseif ($request->sort === '1to5') $query->orderBy('diem_danh_gia');
+        else $query->orderByDesc('thoi_gian_tao');
+    } else {
+        $query->orderByDesc('thoi_gian_tao');
+    }
+
+    $danhGias = $query->get();
+
+    $user = session('user');
+
+    return view('danhgia.list', compact('baiViet', 'danhGias', 'user'));
+}
+
 }

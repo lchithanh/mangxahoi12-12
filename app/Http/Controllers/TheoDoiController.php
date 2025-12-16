@@ -4,103 +4,153 @@ namespace App\Http\Controllers;
 
 use App\Models\TheoDoi;
 use App\Models\NguoiDung;
+use App\Models\ThongBao;
+use App\Models\NhaHang;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 
 class TheoDoiController extends Controller
 {
     /**
-     * Theo dõi một người dùng
+     * =========================
+     * FOLLOW USER
+     * =========================
      */
     public function follow($maNguoiDungDuocTheoDoi)
     {
-        $maNguoiDung = session('ma_nguoi_dung'); // người đang đăng nhập
+        $user = session('user'); // ✅ thống nhất session
 
-        if ($maNguoiDung == $maNguoiDungDuocTheoDoi) {
-            return redirect()->back()->with('error', 'Bạn không thể theo dõi chính mình!');
+        if (!$user) {
+            return back()->with('error', 'Bạn chưa đăng nhập');
         }
 
-        $exists = TheoDoi::where('ma_nguoi_dung', $maNguoiDung)
+        if ($user->ma_nguoi_dung == $maNguoiDungDuocTheoDoi) {
+            return back()->with('error', 'Bạn không thể theo dõi chính mình!');
+        }
+
+        $exists = TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
             ->where('ma_nguoi_duoc_theo_doi', $maNguoiDungDuocTheoDoi)
-            ->first();
+            ->exists();
 
         if (!$exists) {
             TheoDoi::create([
-                'ma_nguoi_dung' => $maNguoiDung,
+                'ma_nguoi_dung'          => $user->ma_nguoi_dung,
                 'ma_nguoi_duoc_theo_doi' => $maNguoiDungDuocTheoDoi,
+                'thoi_gian_tao'          => now(),
+            ]);
+
+            // 🔔 THÔNG BÁO CHO USER ĐƯỢC FOLLOW
+            ThongBao::create([
+                'ma_nguoi_nhan' => $maNguoiDungDuocTheoDoi,
+                'ma_nguoi_gui'  => $user->ma_nguoi_dung,
+                'loai_thong_bao'=> 'theo_doi',
+                'ma_doi_tuong'  => $user->ma_nguoi_dung,
+                'noi_dung'      => $user->ho_ten . ' đã theo dõi bạn',
+                'da_doc'        => 0,
                 'thoi_gian_tao' => now(),
             ]);
         }
 
-        return redirect()->back()->with('success', 'Đã theo dõi người dùng.');
+        return back()->with('success', 'Đã theo dõi người dùng.');
     }
 
     /**
-     * Hủy theo dõi
+     * =========================
+     * UNFOLLOW USER
+     * =========================
      */
     public function unfollow($maNguoiDungDuocTheoDoi)
     {
-        $maNguoiDung = session('ma_nguoi_dung');
+        $user = session('user');
 
-        TheoDoi::where('ma_nguoi_dung', $maNguoiDung)
+        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
+
+        TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
             ->where('ma_nguoi_duoc_theo_doi', $maNguoiDungDuocTheoDoi)
             ->delete();
 
-        return redirect()->back()->with('success', 'Đã hủy theo dõi.');
+        return back()->with('success', 'Đã hủy theo dõi.');
     }
 
     /**
-     * Danh sách người theo dõi
+     * =========================
+     * DANH SÁCH FOLLOWERS
+     * =========================
      */
     public function followers($maNguoiDung)
     {
-        $nguoiDung = NguoiDung::find($maNguoiDung);
-
-        $followers = $nguoiDung->followers()->get(); // dùng quan hệ followers trong model NguoiDung
+        $nguoiDung = NguoiDung::findOrFail($maNguoiDung);
+        $followers = $nguoiDung->followers()->get();
 
         return view('trangcanhan.followers', compact('nguoiDung', 'followers'));
     }
 
     /**
-     * Danh sách người đang theo dõi
+     * =========================
+     * DANH SÁCH FOLLOWING
+     * =========================
      */
     public function following($maNguoiDung)
     {
-        $nguoiDung = NguoiDung::find($maNguoiDung);
-
-        $following = $nguoiDung->following()->get(); // dùng quan hệ following trong model NguoiDung
+        $nguoiDung = NguoiDung::findOrFail($maNguoiDung);
+        $following = $nguoiDung->following()->get();
 
         return view('trangcanhan.following', compact('nguoiDung', 'following'));
     }
+
+    /**
+     * =========================
+     * FOLLOW NHÀ HÀNG
+     * =========================
+     */
     public function followNhaHang($id)
-{
-    $userId = session('user')->ma_nguoi_dung;
+    {
+        $user = session('user');
 
-    // Kiểm tra đã follow chưa
-    $exists = TheoDoi::where('ma_nguoi_dung', $userId)
-                    ->where('ma_nha_hang', $id)
-                    ->exists();
+        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
 
-    if (!$exists) {
-        TheoDoi::create([
-            'ma_nguoi_dung' => $userId,
-            'ma_nha_hang' => $id,
-            'thoi_gian_tao' => now(),
-        ]);
+        $exists = TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
+            ->where('ma_nha_hang', $id)
+            ->exists();
+
+        if (!$exists) {
+            TheoDoi::create([
+                'ma_nguoi_dung' => $user->ma_nguoi_dung,
+                'ma_nha_hang'   => $id,
+                'thoi_gian_tao' => now(),
+            ]);
+
+            $nhaHang = NhaHang::findOrFail($id);
+
+            // 🔔 THÔNG BÁO CHO CHỦ NHÀ HÀNG
+            ThongBao::create([
+                'ma_nguoi_nhan' => $nhaHang->ma_chu_so_huu,
+                'ma_nguoi_gui'  => $user->ma_nguoi_dung,
+                'loai_thong_bao'=> 'theo_doi',
+                'ma_doi_tuong'  => $id,
+                'noi_dung'      => $user->ho_ten . ' đã theo dõi nhà hàng của bạn',
+                'da_doc'        => 0,
+                'thoi_gian_tao' => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Đã theo dõi nhà hàng.');
     }
 
-    return back();
-}
+    /**
+     * =========================
+     * UNFOLLOW NHÀ HÀNG
+     * =========================
+     */
+    public function unfollowNhaHang($id)
+    {
+        $user = session('user');
 
-public function unfollowNhaHang($id)
-{
-    $userId = session('user')->ma_nguoi_dung;
+        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
 
-    TheoDoi::where('ma_nguoi_dung', $userId)
-           ->where('ma_nha_hang', $id)
-           ->delete();
+        TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
+            ->where('ma_nha_hang', $id)
+            ->delete();
 
-    return back();
-}
-
+        return back()->with('success', 'Đã hủy theo dõi nhà hàng.');
+    }
 }

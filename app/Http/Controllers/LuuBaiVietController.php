@@ -48,6 +48,6 @@ class LuuBaiVietController extends Controller
             ->orderBy('thoi_gian_tao', 'desc')
             ->get();
 
-        return view('baiviet.save-show', compact('luuBaiViets', 'user'));
+        return view('baiviet.save', compact('luuBaiViets', 'user'));
     }
 }

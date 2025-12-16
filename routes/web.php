@@ -4,8 +4,10 @@ use App\Http\Controllers\DanhGiaController;
 use App\Http\Controllers\KhuVucController;
 use App\Http\Controllers\LuotThichController;
 use App\Http\Controllers\NhaHangController;
+use App\Http\Controllers\PhongChatController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TheoDoiController;
+use App\Http\Controllers\ThongBaoController;
 use App\Http\Controllers\TinNhanController;
 use App\Http\Controllers\TrangCaNhanController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +40,8 @@ Route::delete('baiviet/{id}', [BaiVietController::class, 'destroy'])->name('baiv
 //like
 Route::post('/baiviet/like/{id}', [LuotThichController::class, 'toggleLike'])->name('baiviet.like');
 Route::get('baiviet/{id}', [BaiVietController::class, 'show'])->name('baiviet.show');
+//save
+Route::get('/luu-bai-viet', [LuuBaiVietController::class, 'index'])->name('luu_baiviet.index');
 
 
 // Đăng ký
@@ -113,14 +117,18 @@ Route::get('/follow/{id}', [TheoDoiController::class, 'follow'])->name('follow')
 Route::get('/follow/nhahang/{id}', [TheoDoiController::class, 'followNhaHang'])->name('follow.nhahang');
 Route::get('/unfollow/nhahang/{id}', [TheoDoiController::class, 'unfollowNhaHang'])->name('unfollow.nhahang');
 
-
+//tin nhắn
 Route::get('/tin-nhan', [TinNhanController::class, 'index'])->name('tinnhan.index');
-Route::get('/nha-hang/{id}/chat', [TinNhanController::class, 'show'])->name('tinnhan.show');
 Route::post('/tin-nhan', [TinNhanController::class, 'store'])->name('tinnhan.store');
+// Route tạo phòng chat mới
+Route::post('/phongchat', [PhongChatController::class, 'store'])->name('phongchat.store');
 
-// API realtime (polling)
-Route::get('/tin-nhan/fetch/{maNhaHang}', [TinNhanController::class, 'fetch'])
-    ->name('tinnhan.fetch');
+// Route hiển thị phòng chat
+Route::get('/phongchat/{id}', [PhongChatController::class, 'show'])->name('phongchat.show');
+
 
 
 Route::resource('khuvuc', KhuVucController::class);
+
+Route::get('/thong-bao', [ThongBaoController::class, 'index'])
+    ->name('thongbao.index');

@@ -67,32 +67,13 @@
     <div class="col-lg-8">
         <h4>Các đánh giá của {{ $user->ho_ten ?? 'Người dùng' }}</h4>
 
-        @if($danhGias && $danhGias->count() > 0)
-            @foreach($danhGias as $dg)
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-body">
-                        <h6 class="text-muted">
-                            {{ $dg->baiViet->nhaHang->ten_nha_hang ?? 'Nhà hàng đã xóa' }} - {{ $dg->thoi_gian_tao->format('d/m/Y H:i') }}
-                        </h6>
-                        <p>{{ $dg->binh_luan }}</p>
-                        <p><strong>Điểm:</strong> {{ $dg->diem_danh_gia }}/5</p>
-
-                        @if($dg->duong_dan_anh)
-                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                @foreach(explode(',', $dg->duong_dan_anh) as $anh)
-                                    <img src="{{ asset($anh) }}" alt="Ảnh đánh giá" class="rounded" style="width:80px; height:80px; object-fit:cover;">
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            @endforeach
-        @else
-            <div class="text-center text-muted py-5">
-                <i class="bi bi-file-earmark-text" style="font-size:3rem;"></i>
-                <p class="mt-3">Chưa gửi đánh giá nào.</p>
-            </div>
-        @endif
+        {{-- Include danh sách đánh giá --}}
+        @include('danhgia.list', [
+            'baiViet' => null,
+            'danhGias' => $danhGias, 
+            'user' => $user
+        ])
     </div>
+
 </div>
 @endsection

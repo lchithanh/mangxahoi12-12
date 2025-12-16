@@ -8,7 +8,7 @@
     <!-- Header nhà hàng -->
     <div class="header mb-4" 
         style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
-               url('{{ $nhaHang->anh_dai_dien ? asset('storage/'.$nhaHang->anh_dai_dien) : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4' }}') center/cover no-repeat; 
+               url('{{ $nhaHang->anh_dai_dien ? asset('uploads/anh_nha_hang'.$nhaHang->anh_dai_dien) : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4' }}') center/cover no-repeat; 
                border-radius:10px; padding:50px 20px; color:#fff; text-align:center;">
         <h1>{{ $nhaHang->ten_nha_hang ?? 'Nhà hàng' }}</h1>
         <p>{{ $nhaHang->mo_ta ?? '' }}</p>
@@ -20,9 +20,7 @@
             <div class="info-item"><i class="fas fa-star"></i> {{ $nhaHang->phanLoai->ten_phan_loai ?? 'Chưa phân loại' }}</div>
             <div class="info-item"><i class="fas fa-building"></i> {{ $nhaHang->khuVuc->ten_khu_vuc ?? 'Chưa xác định khu vực' }}</div>
             <div class="info-item"><i class="fas fa-user"></i> {{ $nhaHang->chuSoHuu->ho_ten ?? 'Chưa xác định' }}</div>
-            
         </div>
-        
 
         <!-- Nút Edit nhà hàng chỉ hiện khi người đăng nhập là chủ sở hữu -->
         @if(session('user') && session('user')->ma_nguoi_dung === $nhaHang->ma_chu_so_huu)
@@ -41,7 +39,7 @@
                 <div class="card-body">
                     <!-- Ảnh đại diện nhà hàng -->
                     @if(!empty($nhaHang->anh_dai_dien))
-                        <img src="{{ asset('storage/' . $nhaHang->anh_dai_dien) }}" 
+                        <img src="{{ asset('./uploads/anh_nha_hang' . $nhaHang->anh_dai_dien) }}" 
                              class="rounded-circle mb-3" 
                              alt="{{ $nhaHang->ten_nha_hang }}" 
                              style="width:150px; height:150px; object-fit:cover;">
@@ -58,7 +56,6 @@
                     <p class="text-muted mb-0">Điện thoại: {{ $nhaHang->so_dien_thoai ?? '(028) ...' }}</p>
                     <p class="text-muted mb-0">Giờ mở cửa: {{ $nhaHang->gio_mo_cua ?? 'Chưa cập nhật' }}</p>
                     
-
                     <!-- Nút theo dõi & nhắn tin -->
                     @if(session('user'))
                         <div class="d-flex gap-2 mt-3">
@@ -79,9 +76,30 @@
                             @endif
 
                             @if($nhaHang->chuSoHuu)
-                                <a href="{{ route('tinnhan.show', $nhaHang->ma_nha_hang) }}" class="btn btn-success btn-sm flex-fill">
-                                    Nhắn tin
-                                </a>
+                                @php
+                                    $user = session('user');
+                                    // Kiểm tra phòng chat đã tồn tại giữa user và nhà hàng
+                                    $phongChat = \App\Models\PhongChat::where('loai_phong', 'user_nhahang')
+                                        ->where('ma_nha_hang', $nhaHang->ma_nha_hang)
+                                        ->where(function($q) use ($user) {
+                                            $q->where('ma_nguoi_dung_1', $user->ma_nguoi_dung)
+                                              ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung);
+                                        })->first();
+                                @endphp
+
+                                @if($phongChat)
+                                    <a href="{{ route('phongchat.show', $phongChat->id) }}" class="btn btn-success btn-sm flex-fill">
+                                        Nhắn tin
+                                    </a>
+                                @else
+                                    <form action="{{ route('phongchat.store') }}" method="POST" class="d-inline flex-fill">
+                                        @csrf
+                                        <input type="hidden" name="loai_phong" value="user_nhahang">
+                                        <input type="hidden" name="ma_nguoi_dung_2" value="{{ $nhaHang->ma_chu_so_huu }}">
+                                        <input type="hidden" name="ma_nha_hang" value="{{ $nhaHang->ma_nha_hang }}">
+                                        <button type="submit" class="btn btn-success btn-sm w-100">Nhắn tin</button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
                     @else
