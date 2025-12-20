@@ -1,120 +1,219 @@
-<?php  
+<?php
+
 namespace App\Http\Controllers;
 
-use App\Models\ThongBao;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use App\Models\DanhGia;
 use App\Models\BaiViet;
+use App\Models\AnhDanhGia;
+use App\Models\ThongBao;
 
 class DanhGiaController extends Controller
 {
     /**
-     * Hiển thị danh sách đánh giá của 1 bài viết
+     * =====================================================
+     * DANH SÁCH ĐÁNH GIÁ CỦA BÀI VIẾT
+     * =====================================================
      */
-    public function index($ma_bai_viet)
+    public function index($ma_bai_viet, Request $request)
     {
-        $baiViet = BaiViet::with(['nguoiDang', 'anhBaiViets'])->findOrFail($ma_bai_viet);
+        $baiViet = BaiViet::with(['nguoiDang', 'anhBaiViets'])
+            ->findOrFail($ma_bai_viet);
 
-        // Lấy danh sách đánh giá mới nhất trước
-        $danhGias = $baiViet->danhGias()
-            ->with('nguoiDung')
-            ->orderBy('thoi_gian_tao', 'desc')
-            
-            ->get();
+        $query = $baiViet->danhGias()
+            ->with(['nguoiDung', 'anhDanhGias']);
 
-            // Lấy người dùng hiện tại từ session
-    $user = session('user');
-        return view('danhgia.index', compact('baiViet', 'danhGias','user'));
+        switch ($request->get('sort', 'latest')) {
+            case '5to1':
+                $query->orderByDesc('diem_danh_gia');
+                break;
+            case '1to5':
+                $query->orderBy('diem_danh_gia');
+                break;
+            default:
+                $query->orderByDesc('thoi_gian_tao');
+        }
+
+        return view('danhgia.index', [
+            'baiViet'  => $baiViet,
+            'danhGias' => $query->get(),
+        ]);
     }
 
     /**
-     * Lưu đánh giá
+     * =====================================================
+     * LƯU ĐÁNH GIÁ
+     * =====================================================
      */
     public function store(Request $request, $ma_bai_viet)
     {
-        $user = session('user');
+        $userId = session('ma_nguoi_dung');
 
-        if (!$user) {
-            return redirect()->route('baiviet.index')->with('error', 'Cần đăng nhập để viết đánh giá.');
+        if (!$userId) {
+            return redirect()->route('baiviet.index')
+                ->with('error', 'Cần đăng nhập để viết đánh giá.');
         }
 
         $request->validate([
-            'diem_danh_gia'   => 'required|integer|min:1|max:5',
-            'binh_luan'       => 'required|string',
-            'duong_dan_anh.*' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048'
+            'diem_danh_gia'  => 'required|integer|min:1|max:5',
+            'binh_luan'      => 'required|string',
+            'anh_danh_gia.*' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
         $baiViet = BaiViet::findOrFail($ma_bai_viet);
 
-        // Tạo đánh giá
         $danhGia = DanhGia::create([
-            'ma_nguoi_dung'  => $user->ma_nguoi_dung,
-            'ma_nha_hang'    => $baiViet->ma_nha_hang,
-            'ma_bai_viet'    => $baiViet->ma_bai_viet, // ✅ thêm dòng này
-
-            'diem_danh_gia'  => $request->diem_danh_gia,
-            'binh_luan'      => $request->binh_luan,
-            'thoi_gian_tao'  => now(),
-            'duong_dan_anh'  => null,
+            'ma_nguoi_dung' => $userId,
+            'ma_nha_hang'   => $baiViet->ma_nha_hang,
+            'ma_bai_viet'   => $baiViet->ma_bai_viet,
+            'diem_danh_gia' => $request->diem_danh_gia,
+            'binh_luan'     => $request->binh_luan,
+            'thoi_gian_tao' => now(),
         ]);
 
-        // Lưu ảnh nếu có
-        if ($request->hasFile('duong_dan_anh')) {
-            $savedPaths = [];
-            foreach ($request->file('duong_dan_anh') as $file) {
-                $filename = time() . "_" . uniqid() . "." . $file->getClientOriginalExtension();
-                $file->move(public_path('uploads/danhgia'), $filename);
-                $savedPaths[] = 'uploads/danhgia/' . $filename;
+        // Upload ảnh đánh giá (DOCUMENT_ROOT)
+        if ($request->hasFile('anh_danh_gia')) {
+
+            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_danh_gia';
+
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
             }
-            $danhGia->duong_dan_anh = implode(',', $savedPaths);
-            $danhGia->save();
+
+            foreach ($request->file('anh_danh_gia') as $file) {
+                $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                $file->move($uploadPath, $fileName);
+
+                AnhDanhGia::create([
+                    'ma_danh_gia'   => $danhGia->ma_danh_gia,
+                    'duong_dan_anh' => 'uploads/anh_danh_gia/'.$fileName,
+                    'thoi_gian_tao' => now(),
+                ]);
+            }
         }
+
+        // Thông báo cho chủ bài viết
         ThongBao::create([
             'ma_nguoi_nhan' => $baiViet->ma_nguoi_dang,
-            'ma_nguoi_gui'  => $user->ma_nguoi_dung,
+            'ma_nguoi_gui'  => $userId,
             'loai_thong_bao'=> 'danh_gia',
             'ma_doi_tuong'  => $baiViet->ma_bai_viet,
-            'noi_dung'      => $user->ho_ten .'đã đánh giá bài viết của bạn',
+            'noi_dung'      => 'Có người đã đánh giá bài viết của bạn',
             'da_doc'        => 0,
             'thoi_gian_tao' => now(),
         ]);
 
-        // Redirect về index ngay lập tức với đánh giá mới
         return redirect()->route('danhgia.index', $ma_bai_viet)
-                         ->with('success', 'Đánh giá đã được gửi!');
-    }
-    public function list($ma_bai_viet, Request $request)
-{
-    $baiViet = BaiViet::findOrFail($ma_bai_viet);
-
-    $query = $baiViet->danhGias()->with('nguoiDung');
-
-    // Filter nếu muốn: điểm đánh giá
-    if ($request->filled('diem')) {
-        $query->where('diem_danh_gia', $request->diem);
+            ->with('success', 'Đánh giá đã được gửi!');
     }
 
-    // Filter theo khu vực của người dùng đánh giá
-    if ($request->filled('district')) {
-        $query->whereHas('nguoiDung', function($q) use ($request){
-            $q->where('ma_khu_vuc', $request->district);
-        });
+    /**
+     * =====================================================
+     * FORM SỬA ĐÁNH GIÁ
+     * =====================================================
+     */
+    public function edit($id)
+    {
+        $userId  = session('ma_nguoi_dung');
+        $danhGia = DanhGia::with('anhDanhGias')->findOrFail($id);
+
+        if (!$userId || $danhGia->ma_nguoi_dung != $userId) {
+            return redirect()->back()
+                ->with('error', 'Bạn không có quyền sửa đánh giá này.');
+        }
+
+        return view('danhgia.edit', compact('danhGia'));
     }
 
-    // Sắp xếp
-    if ($request->filled('sort')) {
-        if ($request->sort === '5to1') $query->orderByDesc('diem_danh_gia');
-        elseif ($request->sort === '1to5') $query->orderBy('diem_danh_gia');
-        else $query->orderByDesc('thoi_gian_tao');
-    } else {
-        $query->orderByDesc('thoi_gian_tao');
+    /**
+     * =====================================================
+     * CẬP NHẬT ĐÁNH GIÁ
+     * =====================================================
+     */
+    public function update(Request $request, $id)
+    {
+        $userId  = session('ma_nguoi_dung');
+        $danhGia = DanhGia::with('anhDanhGias')->findOrFail($id);
+
+        if (!$userId || $danhGia->ma_nguoi_dung != $userId) {
+            return redirect()->back()
+                ->with('error', 'Bạn không có quyền cập nhật đánh giá này.');
+        }
+
+        $request->validate([
+            'diem_danh_gia'  => 'required|integer|min:1|max:5',
+            'binh_luan'      => 'required|string',
+            'anh_danh_gia.*' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+        ]);
+
+        $danhGia->update([
+            'diem_danh_gia' => $request->diem_danh_gia,
+            'binh_luan'     => $request->binh_luan,
+        ]);
+
+        // Xóa ảnh được chọn
+        if ($request->has('xoa_anh')) {
+            foreach ($request->xoa_anh as $anhId) {
+                $anh = AnhDanhGia::find($anhId);
+                if ($anh && File::exists($_SERVER['DOCUMENT_ROOT'].'/'.$anh->duong_dan_anh)) {
+                    File::delete($_SERVER['DOCUMENT_ROOT'].'/'.$anh->duong_dan_anh);
+                    $anh->delete();
+                }
+            }
+        }
+
+        // Thêm ảnh mới
+        if ($request->hasFile('anh_danh_gia')) {
+
+            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_danh_gia';
+
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
+            }
+
+            foreach ($request->file('anh_danh_gia') as $file) {
+                $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                $file->move($uploadPath, $fileName);
+
+                AnhDanhGia::create([
+                    'ma_danh_gia'   => $danhGia->ma_danh_gia,
+                    'duong_dan_anh' => 'uploads/anh_danh_gia/'.$fileName,
+                    'thoi_gian_tao' => now(),
+                ]);
+            }
+        }
+
+        return redirect()->route('danhgia.index', $danhGia->ma_bai_viet)
+            ->with('success', 'Đánh giá đã được cập nhật!');
     }
 
-    $danhGias = $query->get();
+    /**
+     * =====================================================
+     * XÓA ĐÁNH GIÁ
+     * =====================================================
+     */
+    public function destroy($id)
+    {
+        $userId  = session('ma_nguoi_dung');
+        $danhGia = DanhGia::with('anhDanhGias')->findOrFail($id);
 
-    $user = session('user');
+        if (!$userId || $danhGia->ma_nguoi_dung != $userId) {
+            return redirect()->back()
+                ->with('error', 'Bạn không có quyền xóa đánh giá này.');
+        }
 
-    return view('danhgia.list', compact('baiViet', 'danhGias', 'user'));
-}
+        foreach ($danhGia->anhDanhGias as $anh) {
+            $path = $_SERVER['DOCUMENT_ROOT'].'/'.$anh->duong_dan_anh;
+            if (File::exists($path)) {
+                File::delete($path);
+            }
+            $anh->delete();
+        }
 
+        $danhGia->delete();
+
+        return redirect()->route('danhgia.index', $danhGia->ma_bai_viet)
+            ->with('success', 'Đánh giá đã được xóa!');
+    }
 }

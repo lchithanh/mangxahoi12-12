@@ -23,8 +23,8 @@
         </div>
     </div>
 
-    <form action="{{ route('tinnhan.store') }}" method="POST">
-        @csrf
+<form action="{{ route('tinnhan.gui', $phongChat->id) }}" method="POST">
+            @csrf
         <input type="hidden" name="ma_phong_chat" value="{{ $phongChat->id }}">
         <div class="input-group">
             <input type="text" name="noi_dung" class="form-control" placeholder="Nhập tin nhắn..." required>

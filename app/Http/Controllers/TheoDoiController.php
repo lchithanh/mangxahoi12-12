@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Session;
 use App\Models\TheoDoi;
 use App\Models\NguoiDung;
 use App\Models\ThongBao;
 use App\Models\NhaHang;
-use Illuminate\Http\Request;
 
 class TheoDoiController extends Controller
 {
@@ -17,14 +17,20 @@ class TheoDoiController extends Controller
      */
     public function follow($maNguoiDungDuocTheoDoi)
     {
-        $user = session('user'); // ✅ thống nhất session
+        $maNguoiDung = Session::get('ma_nguoi_dung');
 
-        if (!$user) {
+        if (!$maNguoiDung) {
             return back()->with('error', 'Bạn chưa đăng nhập');
         }
 
-        if ($user->ma_nguoi_dung == $maNguoiDungDuocTheoDoi) {
+        if ($maNguoiDung == $maNguoiDungDuocTheoDoi) {
             return back()->with('error', 'Bạn không thể theo dõi chính mình!');
+        }
+
+        $user = NguoiDung::find($maNguoiDung);
+        if (!$user) {
+            Session::forget('ma_nguoi_dung');
+            return back()->with('error', 'Phiên đăng nhập không hợp lệ.');
         }
 
         $exists = TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
@@ -38,13 +44,13 @@ class TheoDoiController extends Controller
                 'thoi_gian_tao'          => now(),
             ]);
 
-            // 🔔 THÔNG BÁO CHO USER ĐƯỢC FOLLOW
+            // 🔔 Thông báo cho người được theo dõi
             ThongBao::create([
                 'ma_nguoi_nhan' => $maNguoiDungDuocTheoDoi,
                 'ma_nguoi_gui'  => $user->ma_nguoi_dung,
                 'loai_thong_bao'=> 'theo_doi',
                 'ma_doi_tuong'  => $user->ma_nguoi_dung,
-                'noi_dung'      => $user->ho_ten . ' đã theo dõi bạn',
+                'noi_dung'      => "{$user->ho_ten} đã theo dõi bạn",
                 'da_doc'        => 0,
                 'thoi_gian_tao' => now(),
             ]);
@@ -60,11 +66,13 @@ class TheoDoiController extends Controller
      */
     public function unfollow($maNguoiDungDuocTheoDoi)
     {
-        $user = session('user');
+        $maNguoiDung = Session::get('ma_nguoi_dung');
 
-        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
+        if (!$maNguoiDung) {
+            return back()->with('error', 'Bạn chưa đăng nhập');
+        }
 
-        TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
+        TheoDoi::where('ma_nguoi_dung', $maNguoiDung)
             ->where('ma_nguoi_duoc_theo_doi', $maNguoiDungDuocTheoDoi)
             ->delete();
 
@@ -104,9 +112,17 @@ class TheoDoiController extends Controller
      */
     public function followNhaHang($id)
     {
-        $user = session('user');
+        $maNguoiDung = Session::get('ma_nguoi_dung');
 
-        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
+        if (!$maNguoiDung) {
+            return back()->with('error', 'Bạn chưa đăng nhập');
+        }
+
+        $user = NguoiDung::find($maNguoiDung);
+        if (!$user) {
+            Session::forget('ma_nguoi_dung');
+            return back()->with('error', 'Phiên đăng nhập không hợp lệ.');
+        }
 
         $exists = TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
             ->where('ma_nha_hang', $id)
@@ -121,13 +137,13 @@ class TheoDoiController extends Controller
 
             $nhaHang = NhaHang::findOrFail($id);
 
-            // 🔔 THÔNG BÁO CHO CHỦ NHÀ HÀNG
+            // 🔔 Thông báo cho chủ nhà hàng
             ThongBao::create([
                 'ma_nguoi_nhan' => $nhaHang->ma_chu_so_huu,
                 'ma_nguoi_gui'  => $user->ma_nguoi_dung,
                 'loai_thong_bao'=> 'theo_doi',
                 'ma_doi_tuong'  => $id,
-                'noi_dung'      => $user->ho_ten . ' đã theo dõi nhà hàng của bạn',
+                'noi_dung'      => "{$user->ho_ten} đã theo dõi nhà hàng của bạn",
                 'da_doc'        => 0,
                 'thoi_gian_tao' => now(),
             ]);
@@ -143,11 +159,13 @@ class TheoDoiController extends Controller
      */
     public function unfollowNhaHang($id)
     {
-        $user = session('user');
+        $maNguoiDung = Session::get('ma_nguoi_dung');
 
-        if (!$user) return back()->with('error', 'Bạn chưa đăng nhập');
+        if (!$maNguoiDung) {
+            return back()->with('error', 'Bạn chưa đăng nhập');
+        }
 
-        TheoDoi::where('ma_nguoi_dung', $user->ma_nguoi_dung)
+        TheoDoi::where('ma_nguoi_dung', $maNguoiDung)
             ->where('ma_nha_hang', $id)
             ->delete();
 

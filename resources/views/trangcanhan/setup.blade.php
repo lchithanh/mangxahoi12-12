@@ -4,72 +4,98 @@
 
 @section('maincontent')
 <div class="container py-4">
-    <h3 class="mb-4">Chỉnh sửa hồ sơ cá nhân</h3>
+    <h3>Chỉnh sửa hồ sơ</h3>
 
+    {{-- Thông báo thành công / lỗi --}}
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     @endif
 
+    {{-- Hiển thị lỗi validate --}}
     @if($errors->any())
         <div class="alert alert-danger">
             <ul class="mb-0">
-                @foreach($errors->all() as $err)
-                    <li>{{ $err }}</li>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    <form action="{{ route('trangcanhan.saveSetup') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('trangcanhan.save') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
-        <div class="mb-3 text-center">
-            <label for="avatar" class="form-label">Ảnh đại diện</label>
-            <div class="mb-2">
-                <img src="{{ $user->anh_dai_dien ? asset($user->anh_dai_dien) : 'https://via.placeholder.com/150?text=Avatar' }}"
-                     alt="Avatar"
-                     id="preview-avatar"
-                     class="rounded-circle"
-                     style="width:150px; height:150px; object-fit:cover;">
-            </div>
-            <input type="file" class="form-control" id="avatar" name="anh_dai_dien" accept="image/*">
-        </div>
-
+        {{-- Họ tên --}}
         <div class="mb-3">
-            <label for="ho_ten" class="form-label">Họ và tên</label>
-            <input type="text" class="form-control" id="ho_ten" name="ho_ten" value="{{ old('ho_ten', $user->ho_ten) }}" required>
+            <label for="ho_ten" class="form-label">Họ tên</label>
+            <input type="text" name="ho_ten" id="ho_ten" class="form-control"
+                   value="{{ old('ho_ten', $user->ho_ten) }}" required>
+            @error('ho_ten') <small class="text-danger">{{ $message }}</small> @enderror
         </div>
 
+        {{-- Email --}}
         <div class="mb-3">
             <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" name="email" value="{{ old('email', $user->email) }}" required>
+            <input type="email" name="email" id="email" class="form-control"
+                   value="{{ old('email', $user->email) }}" required>
+            @error('email') <small class="text-danger">{{ $message }}</small> @enderror
         </div>
 
+        {{-- Mô tả --}}
         <div class="mb-3">
-            <label for="gioi_thieu" class="form-label">Giới thiệu</label>
-            <textarea class="form-control" id="gioi_thieu" name="gioi_thieu" rows="4">{{ old('gioi_thieu', $user->gioi_thieu) }}</textarea>
+            <label for="mo_ta" class="form-label">Mô tả</label>
+            <textarea name="mo_ta" id="mo_ta" class="form-control" rows="3">{{ old('mo_ta', $user->mo_ta) }}</textarea>
+            @error('mo_ta') <small class="text-danger">{{ $message }}</small> @enderror
+        </div>
+
+        {{-- Ảnh đại diện --}}
+        <div class="mb-3">
+            <label for="anh_dai_dien" class="form-label">Ảnh đại diện</label>
+            <input type="file" name="anh_dai_dien" id="anh_dai_dien" class="form-control" accept="image/*">
+
+            {{-- Ảnh hiện tại --}}
+            @if($user->anh_dai_dien)
+                <div class="mt-2">
+                    <img src="{{ asset($user->anh_dai_dien) }}" alt="Ảnh đại diện"
+                         style="width:100px; height:100px; object-fit:cover;" class="img-thumbnail">
+                </div>
+            @endif
+            @error('anh_dai_dien') <small class="text-danger">{{ $message }}</small> @enderror
+
+            {{-- Preview ảnh mới --}}
+            <div class="mt-3">
+                <img id="preview" style="width:100px; height:100px; object-fit:cover; display:none;" class="img-thumbnail">
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-        <a href="{{ route('trangcanhan.index') }}" class="btn btn-secondary ms-2">Hủy</a>
+        <a href="{{ route('trangcanhan.index') }}" class="btn btn-secondary">Hủy</a>
     </form>
 </div>
 
 <script>
-    // Xem trước avatar khi chọn file mới
-    const avatarInput = document.getElementById('avatar');
-    const preview = document.getElementById('preview-avatar');
-
-    avatarInput.addEventListener('change', function() {
+    // Preview ảnh mới
+    const inputFile = document.getElementById('anh_dai_dien');
+    const preview = document.getElementById('preview');
+    inputFile.addEventListener('change', function() {
         const file = this.files[0];
-        if(file){
+        if (file) {
             const reader = new FileReader();
-            reader.onload = function(e){
+            reader.onload = (e) => {
                 preview.src = e.target.result;
-            }
+                preview.style.display = 'block';
+            };
             reader.readAsDataURL(file);
         }
     });
 </script>
-
 @endsection

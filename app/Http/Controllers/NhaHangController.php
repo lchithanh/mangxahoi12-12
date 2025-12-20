@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PhongChat;
-use File;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use App\Models\PhongChat;
 use App\Models\NhaHang;
 use App\Models\NguoiDung;
 use App\Models\KhuVuc;
@@ -13,239 +14,219 @@ use App\Models\PhanLoai;
 class NhaHangController extends Controller
 {
     /**
-     * Hiển thị danh sách nhà hàng
+     * Danh sách nhà hàng
      */
     public function index()
     {
-        // Lấy danh sách nhà hàng kèm quan hệ (chủ sở hữu, khu vực, phân loại)
+        $userId = Session::get('ma_nguoi_dung');
+        $user   = $userId ? NguoiDung::find($userId) : null;
+
         $nhaHangs = NhaHang::with(['chuSoHuu', 'khuVuc', 'phanLoai'])
-            ->orderByDesc('ma_nha_hang') // nhà hàng mới nhất lên đầu
+            ->orderByDesc('ma_nha_hang')
             ->get();
 
-        return view('nhahang.index', compact('nhaHangs'));
+        return view('nhahang.index', compact('nhaHangs', 'user'));
     }
 
     /**
-     * Xem chi tiết một nhà hàng
+     * Chi tiết nhà hàng
      */
     public function show($id)
-{
-    $user = session('user');
-    $nhaHang = NhaHang::with([
-        'chuSoHuu',
-        'khuVuc',
-        'phanLoai',
-        'baiViets',
-    ])->findOrFail($id);
+    {
+        $userId = Session::get('ma_nguoi_dung');
+        $user   = $userId ? NguoiDung::find($userId) : null;
 
-    $phongChat = null;
+        $nhaHang = NhaHang::with([
+            'chuSoHuu',
+            'khuVuc',
+            'phanLoai',
+            'baiViets',
+            'danhGias',
+            'tinNhans'
+        ])->findOrFail($id);
 
-    if ($user) {
-        // Kiểm tra xem đã có phòng chat giữa user và nhà hàng chưa
-        $phongChat = PhongChat::where('loai_phong', 'user_nhahang')
-            ->where('ma_nha_hang', $nhaHang->ma_nha_hang)
-            ->where(function($q) use ($user) {
-                $q->where('ma_nguoi_dung_1', $user->ma_nguoi_dung)
-                  ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung);
-            })->first();
+        $phongChat = null;
+        if ($user) {
+            $phongChat = PhongChat::where('loai_phong', 'user_nhahang')
+                ->where('ma_nha_hang', $nhaHang->ma_nha_hang)
+                ->where(function ($q) use ($user) {
+                    $q->where('ma_nguoi_dung_1', $user->ma_nguoi_dung)
+                      ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung);
+                })
+                ->first();
+        }
+
+        return view('nhahang.show', compact('nhaHang', 'user', 'phongChat'));
     }
-
-    return view('nhahang.show', compact('nhaHang', 'user', 'phongChat'));
-}
-
 
     /**
      * Form tạo nhà hàng
      */
     public function create()
-{
-    $user = session('user');
+    {
+        if (Session::get('user_role') !== 'chu_quan') {
+            return redirect()->route('nhahang.index')
+                ->with('error', '⚠️ Chỉ chủ quán mới được tạo nhà hàng.');
+        }
 
-    // Chỉ chủ quán mới được tạo nhà hàng
-    if (!$user || $user->vai_tro !== 'chu_quan') {
+        return view('nhahang.create', [
+            'user'      => NguoiDung::find(Session::get('ma_nguoi_dung')),
+            'khuVucs'   => KhuVuc::all(),
+            'phanLoais' => PhanLoai::all()
+        ]);
+    }
+
+    /**
+     * Lưu nhà hàng mới
+     */
+    public function store(Request $request)
+    {
+        if (Session::get('user_role') !== 'chu_quan') {
+            return redirect()->route('nhahang.index')
+                ->with('error', '⚠️ Chỉ chủ quán mới được tạo nhà hàng.');
+        }
+
+        $userId = Session::get('ma_nguoi_dung');
+
+        $request->validate([
+            'ten_nha_hang' => 'required|string|max:255',
+            'dia_chi'      => 'required|string|max:255',
+            'anh_dai_dien' => 'nullable|image|max:2048',
+        ]);
+
+        // Khu vực
+        $maKhuVuc = $request->ma_khu_vuc;
+        if ($request->ma_khu_vuc === 'khac' && $request->ten_khu_vuc_moi) {
+            $maKhuVuc = KhuVuc::create([
+                'ten_khu_vuc' => $request->ten_khu_vuc_moi
+            ])->ma_khu_vuc;
+        }
+
+        // Phân loại
+        $phanLoai = null;
+        if ($request->phan_loai === 'khac' && $request->phan_loai_moi) {
+            $phanLoai = PhanLoai::firstOrCreate([
+                'ten_phan_loai' => $request->phan_loai_moi
+            ]);
+        } elseif ($request->phan_loai) {
+            $phanLoai = PhanLoai::firstOrCreate([
+                'ten_phan_loai' => $request->phan_loai
+            ]);
+        }
+
+        $data = [
+            'ten_nha_hang'  => $request->ten_nha_hang,
+            'dia_chi'       => $request->dia_chi,
+            'ma_khu_vuc'    => $maKhuVuc,
+            'ma_phan_loai'  => $phanLoai?->ma_phan_loai,
+            'ma_chu_so_huu' => $userId,
+            'mo_ta'         => $request->mo_ta,
+            'so_dien_thoai' => $request->so_dien_thoai,
+            'gio_mo_cua'    => $request->gio_mo_cua,
+        ];
+
+        /* Upload ảnh đại diện */
+        if ($request->hasFile('anh_dai_dien')) {
+            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_nha_hang';
+
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
+            }
+
+            $file     = $request->file('anh_dai_dien');
+            $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file->move($uploadPath, $fileName);
+
+            $data['anh_dai_dien'] = 'uploads/anh_nha_hang/' . $fileName;
+        }
+
+        NhaHang::create($data);
+
         return redirect()->route('nhahang.index')
-            ->with('error', '⚠️ Chỉ chủ quán mới có thể tạo nhà hàng.');
+            ->with('success', 'Tạo nhà hàng thành công!');
     }
-
-    // Lấy danh sách khu vực và phân loại hiện có
-    $khuVucs = KhuVuc::all();
-    $phanLoais = PhanLoai::all();
-
-    return view('nhahang.create', compact('user', 'khuVucs', 'phanLoais'));
-}
-
-    
-// STORE NHÀ HÀNG MỚI
-public function store(Request $request)
-{
-    $user = session('user');
-    if (!$user || $user->vai_tro !== 'chu_quan') {
-        return redirect()->route('nhahang.index')
-            ->with('error', '⚠️ Chỉ chủ quán mới có thể tạo nhà hàng.');
-    }
-
-    $request->validate([
-        'ten_nha_hang' => 'required|string|max:255',
-        'dia_chi'      => 'required|string|max:255',
-        'ma_khu_vuc'   => 'nullable',
-        'ten_khu_vuc_moi' => 'nullable|string|max:255',
-        'phan_loai'    => 'nullable|string|max:255',
-        'phan_loai_moi'=> 'nullable|string|max:255',
-        'anh_dai_dien' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048',
-        'mo_ta'        => 'nullable|string|max:500',
-    ]);
-
-    // Xử lý khu vực
-    $maKhuVuc = $request->ma_khu_vuc;
-    if ($request->ma_khu_vuc === 'khac' && $request->ten_khu_vuc_moi) {
-        $khuVuc = KhuVuc::create(['ten_khu_vuc' => $request->ten_khu_vuc_moi]);
-        $maKhuVuc = $khuVuc->ma_khu_vuc;
-    }
-
-    // Xử lý phân loại
-    $phanLoai = $request->phan_loai ? PhanLoai::firstOrCreate(['ten_phan_loai' => $request->phan_loai]) : null;
-    if ($request->phan_loai === 'khac' && $request->phan_loai_moi) {
-        $phanLoai = PhanLoai::firstOrCreate(['ten_phan_loai' => $request->phan_loai_moi]);
-    }
-
-    $data = [
-        'ten_nha_hang' => $request->ten_nha_hang,
-        'dia_chi' => $request->dia_chi,
-        'ma_khu_vuc' => $maKhuVuc,
-        'ma_phan_loai' => $phanLoai?->ma_phan_loai,
-        'ma_chu_so_huu' => $user->ma_nguoi_dung,
-        'mo_ta' => $request->mo_ta,
-        'so_dien_thoai' => $request->so_dien_thoai,
-        'gio_mo_cua' => $request->gio_mo_cua,
-    ];
-
-    // Upload ảnh đại diện
-    if ($request->hasFile('anh_dai_dien')) {
-        $file = $request->file('anh_dai_dien');
-        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $uploadPath = public_path('uploads/anh_nha_hang');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0755, true);
-        }
-        $file->move($uploadPath, $fileName);
-        $data['anh_dai_dien'] = 'uploads/anh_nha_hang/' . $fileName;
-    }
-
-    NhaHang::create($data);
-
-    return redirect()->route('nhahang.index')->with('success', 'Tạo nhà hàng thành công!');
-}
-
-
-// UPDATE NHÀ HÀNG
-public function update(Request $request, $id)
-{
-    $user = session('user');
-    $nhaHang = NhaHang::findOrFail($id);
-
-    if (!$user || $user->ma_nguoi_dung !== $nhaHang->ma_chu_so_huu) {
-        return redirect()->route('nhahang.index')->with('error', '⚠️ Bạn không có quyền cập nhật nhà hàng này.');
-    }
-
-    $request->validate([
-        'ten_nha_hang' => 'required|string|max:255',
-        'dia_chi'      => 'required|string|max:255',
-        'ma_khu_vuc'   => 'nullable',
-        'ten_khu_vuc_moi' => 'nullable|string|max:255',
-        'phan_loai'    => 'nullable|string|max:255',
-        'phan_loai_moi'=> 'nullable|string|max:255',
-        'anh_dai_dien' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048',
-        'mo_ta'        => 'nullable|string|max:500',
-    ]);
-
-    // Xử lý khu vực
-    $maKhuVuc = $request->ma_khu_vuc;
-    if ($request->ma_khu_vuc === 'khac' && $request->ten_khu_vuc_moi) {
-        $khuVuc = KhuVuc::create(['ten_khu_vuc' => $request->ten_khu_vuc_moi]);
-        $maKhuVuc = $khuVuc->ma_khu_vuc;
-    }
-
-    // Xử lý phân loại
-    $phanLoai = $request->phan_loai ? PhanLoai::firstOrCreate(['ten_phan_loai' => $request->phan_loai]) : null;
-    if ($request->phan_loai === 'khac' && $request->phan_loai_moi) {
-        $phanLoai = PhanLoai::firstOrCreate(['ten_phan_loai' => $request->phan_loai_moi]);
-    }
-
-    $data = [
-        'ten_nha_hang' => $request->ten_nha_hang,
-        'dia_chi' => $request->dia_chi,
-        'ma_khu_vuc' => $maKhuVuc,
-        'ma_phan_loai' => $phanLoai?->ma_phan_loai,
-        'mo_ta' => $request->mo_ta,
-        'so_dien_thoai' => $request->so_dien_thoai,
-        'gio_mo_cua' => $request->gio_mo_cua,
-    ];
-
-    // Upload ảnh mới nếu có
-    if ($request->hasFile('anh_dai_dien')) {
-        // Xóa ảnh cũ
-        if ($nhaHang->anh_dai_dien && File::exists(public_path($nhaHang->anh_dai_dien))) {
-            File::delete(public_path($nhaHang->anh_dai_dien));
-        }
-
-        $file = $request->file('anh_dai_dien');
-        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $uploadPath = public_path('uploads/anh_nha_hang');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0755, true);
-        }
-        $file->move($uploadPath, $fileName);
-        $data['anh_dai_dien'] = 'uploads/anh_nha_hang/' . $fileName;
-    }
-
-    $nhaHang->update($data);
-
-    return redirect()->route('nhahang.show', $nhaHang->ma_nha_hang)
-                     ->with('success', 'Cập nhật nhà hàng thành công!');
-}
-
-
 
     /**
      * Form chỉnh sửa
      */
     public function edit($id)
     {
-        $user = session('user');
+        $userId  = Session::get('ma_nguoi_dung');
         $nhaHang = NhaHang::findOrFail($id);
 
-        // Chỉ chủ quán mới sửa được
-        if (!$user || $user->ma_nguoi_dung !== $nhaHang->ma_chu_so_huu) {
+        if ($userId !== $nhaHang->ma_chu_so_huu) {
             return redirect()->route('nhahang.index')
-                ->with('error', '⚠️ Bạn không có quyền chỉnh sửa nhà hàng này.');
+                ->with('error', '⚠️ Không có quyền.');
         }
 
-        $khuVucs = KhuVuc::all();
-        $phanLoais = PhanLoai::all();
-
-        return view('nhahang.edit', compact('nhaHang', 'khuVucs', 'phanLoais'));
+        return view('nhahang.edit', [
+            'nhaHang'   => $nhaHang,
+            'khuVucs'   => KhuVuc::all(),
+            'phanLoais' => PhanLoai::all()
+        ]);
     }
 
+    /**
+     * Cập nhật nhà hàng
+     */
+    public function update(Request $request, $id)
+    {
+        $userId  = Session::get('ma_nguoi_dung');
+        $nhaHang = NhaHang::findOrFail($id);
 
+        if ($userId !== $nhaHang->ma_chu_so_huu) {
+            return redirect()->route('nhahang.index')
+                ->with('error', '⚠️ Không có quyền.');
+        }
 
+        $data = $request->only([
+            'ten_nha_hang','dia_chi','mo_ta','so_dien_thoai','gio_mo_cua'
+        ]);
+
+        if ($request->hasFile('anh_dai_dien')) {
+            if ($nhaHang->anh_dai_dien) {
+                $old = $_SERVER['DOCUMENT_ROOT'] . '/' . $nhaHang->anh_dai_dien;
+                if (File::exists($old)) File::delete($old);
+            }
+
+            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_nha_hang';
+            File::ensureDirectoryExists($uploadPath);
+
+            $file     = $request->file('anh_dai_dien');
+            $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file->move($uploadPath, $fileName);
+
+            $data['anh_dai_dien'] = 'uploads/anh_nha_hang/'.$fileName;
+        }
+
+        $nhaHang->update($data);
+
+        return redirect()->route('nhahang.show', $id)
+            ->with('success', 'Cập nhật thành công!');
+    }
 
     /**
      * Xóa nhà hàng
      */
     public function destroy($id)
     {
-        $user = session('user');
+        $userId  = Session::get('ma_nguoi_dung');
         $nhaHang = NhaHang::findOrFail($id);
 
-        // Kiểm tra quyền
-        if (!$user || $user->ma_nguoi_dung !== $nhaHang->ma_chu_so_huu) {
+        if ($userId !== $nhaHang->ma_chu_so_huu) {
             return redirect()->route('nhahang.index')
-                ->with('error', '⚠️ Bạn không có quyền xóa nhà hàng này.');
+                ->with('error', '⚠️ Không có quyền.');
+        }
+
+        // Xóa ảnh nếu có
+        if ($nhaHang->anh_dai_dien) {
+            $old = $_SERVER['DOCUMENT_ROOT'] . '/' . $nhaHang->anh_dai_dien;
+            if (File::exists($old)) File::delete($old);
         }
 
         $nhaHang->delete();
 
-        return redirect()->route('nhahang.index')->with('success', 'Xóa thành công!');
+        return redirect()->route('nhahang.index')
+            ->with('success', 'Xóa nhà hàng thành công!');
     }
-    
 }

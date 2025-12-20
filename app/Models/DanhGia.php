@@ -17,7 +17,6 @@ class DanhGia extends Model
         'ma_bai_viet',
         'diem_danh_gia',
         'binh_luan',
-        'duong_dan_anh',
         'thoi_gian_tao'
     ];
 
@@ -35,6 +34,13 @@ class DanhGia extends Model
 {
     return $this->belongsTo(BaiViet::class, 'ma_bai_viet', 'ma_bai_viet');
 }
+
+public function anhDanhGias()
+{
+    return $this->hasMany(AnhDanhGia::class, 'ma_danh_gia', 'ma_danh_gia');
+}
+
+
 
 }
 

@@ -19,6 +19,7 @@ class NguoiDung extends Model
         'thoi_gian_tao',
         'ngay_sinh',
         'mo_ta'
+        
     ];
 
     // Quan hệ với bài viết
@@ -27,7 +28,10 @@ class NguoiDung extends Model
         return $this->hasMany(BaiViet::class, 'ma_nguoi_dang', 'ma_nguoi_dung');
     }
 
-    
+    public function nhaHang() {
+        return $this->hasOne(NhaHang::class, 'ma_chu_so_huu', 'ma_nha_hang');
+    }
+
 
     // Quan hệ với đánh giá
     public function danhGias()

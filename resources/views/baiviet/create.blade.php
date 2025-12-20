@@ -15,6 +15,12 @@
     </style>
 </head>
 <body>
+
+@php
+    // Lấy session id của user hiện tại
+    $currentUserId = session('ma_nguoi_dung');
+@endphp
+
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -39,7 +45,6 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
-
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show">
                         {{ session('error') }}
@@ -47,38 +52,47 @@
                     </div>
                 @endif
 
-                <form action="{{ route('baiviet.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
+                @if($currentUserId)
+                    {{-- FORM tạo bài viết chỉ hiện nếu đã đăng nhập --}}
+                    <form action="{{ route('baiviet.store') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
 
-                    {{-- Chọn nhà hàng --}}
-                    <div class="mb-3">
-                        <label for="ma_nha_hang" class="form-label">Nhà hàng</label>
-                        <select name="ma_nha_hang" id="ma_nha_hang" class="form-select" required>
-                            <option value="">Chọn nhà hàng</option>
-                            @foreach($nhahangs as $nhaHang)
-                                <option value="{{ $nhaHang->ma_nha_hang }}">{{ $nhaHang->ten_nha_hang }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Chọn nhà hàng --}}
+                        <div class="mb-3">
+                            <label for="ma_nha_hang" class="form-label">Nhà hàng</label>
+                            <select name="ma_nha_hang" id="ma_nha_hang" class="form-select" required>
+                                <option value="">Chọn nhà hàng</option>
+                                @foreach($nhahangs as $nhaHang)
+                                    <option value="{{ $nhaHang->ma_nha_hang }}">{{ $nhaHang->ten_nha_hang }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Nội dung bài viết --}}
+                        <div class="mb-3">
+                            <label for="noi_dung" class="form-label">Nội dung</label>
+                            <textarea name="noi_dung" id="noi_dung" class="form-control" rows="5" placeholder="Nhập nội dung bài viết..." required></textarea>
+                        </div>
+
+                        {{-- Thêm ảnh --}}
+                        <div class="mb-3">
+                            <label for="anh_bai_viet" class="form-label">Ảnh bài viết (nếu có)</label>
+                            <input type="file" name="anh_bai_viet[]" id="anh_bai_viet" class="form-control" multiple accept="image/*">
+                            <div id="preview" class="d-flex flex-wrap mt-2"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-create">
+                            <i class="bi bi-plus-lg"></i> Tạo bài viết
+                        </button>
+                        <a href="{{ route('home') }}" class="btn btn-secondary mt-2">Quay lại</a>
+                    </form>
+                @else
+                    {{-- Chưa đăng nhập --}}
+                    <div class="alert alert-warning text-center">
+                        Bạn cần <a href="{{ route('login') }}">đăng nhập</a> để tạo bài viết.
                     </div>
+                @endif
 
-                    {{-- Nội dung bài viết --}}
-                    <div class="mb-3">
-                        <label for="noi_dung" class="form-label">Nội dung</label>
-                        <textarea name="noi_dung" id="noi_dung" class="form-control" rows="5" placeholder="Nhập nội dung bài viết..." required></textarea>
-                    </div>
-
-                    {{-- Thêm ảnh --}}
-                    <div class="mb-3">
-                        <label for="anh_bai_viet" class="form-label">Ảnh bài viết (nếu có)</label>
-                        <input type="file" name="anh_bai_viet[]" id="anh_bai_viet" class="form-control" multiple accept="image/*">
-                        <div id="preview" class="d-flex flex-wrap mt-2"></div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-create">
-                        <i class="bi bi-plus-lg"></i> Tạo bài viết
-                    </button>
-                    <a href="{{ route('home') }}" class="btn btn-secondary mt-2">Quay lại</a>
-                </form>
             </div>
         </div>
     </div>
@@ -86,23 +100,25 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Xem trước ảnh
+    // Preview ảnh
     const inputFile = document.getElementById('anh_bai_viet');
     const preview = document.getElementById('preview');
 
-    inputFile.addEventListener('change', function() {
-        preview.innerHTML = '';
-        for (let file of inputFile.files) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.classList.add('preview-img');
-                preview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    if(inputFile){
+        inputFile.addEventListener('change', function() {
+            preview.innerHTML = '';
+            for (let file of inputFile.files) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('preview-img');
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 </script>
 </body>
 </html>

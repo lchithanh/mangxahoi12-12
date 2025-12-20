@@ -3,46 +3,62 @@
 namespace App\Http\Controllers;
 
 use App\Models\PhongChat;
+use App\Models\NguoiDung;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class PhongChatController extends Controller
 {
-    // Danh sách phòng chat của user hoặc nhà hàng
+    /**
+     * =========================
+     * DANH SÁCH PHÒNG CHAT
+     * =========================
+     */
     public function index()
     {
-        $user = session('user');
-        if (!$user) return redirect()->route('login');
+        $maNguoiDung = Session::get('ma_nguoi_dung');
+        if (!$maNguoiDung) {
+            return redirect()->route('login')->with('error', 'Bạn cần đăng nhập');
+        }
 
-        $userVaiTro = $user->vai_tro ?? 'user';
+        $user = NguoiDung::find($maNguoiDung);
+        if (!$user) {
+            Session::forget('ma_nguoi_dung');
+            return redirect()->route('login')->with('error', 'Phiên đăng nhập không hợp lệ.');
+        }
+
+        $userVaiTro = Session::get('user_role') ?? 'user';
+        $maNhaHang  = Session::get('ma_nha_hang');
 
         // Lấy tất cả phòng chat mà người này tham gia
         $phongChats = PhongChat::with(['nguoiDung1','nguoiDung2','nhaHang','tinNhans'])
-            ->where(function($q) use ($user) {
+            ->where(function($q) use ($user, $maNhaHang) {
                 $q->where('ma_nguoi_dung_1', $user->ma_nguoi_dung)
-                  ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung)
-                  ->orWhere('ma_nha_hang', $user->ma_nha_hang ?? 0);
+                  ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung);
+
+                if ($maNhaHang) {
+                    $q->orWhere('ma_nha_hang', $maNhaHang);
+                }
             })
             ->get();
 
         // Gán tên hiển thị cho từng phòng
         foreach ($phongChats as $phong) {
             if ($userVaiTro === 'nhahang') {
-                // Nhà hàng xem -> hiển thị tên user
                 $nguoiKhac = ($phong->ma_nguoi_dung_1 == $user->ma_nguoi_dung)
                     ? $phong->nguoiDung2
                     : $phong->nguoiDung1;
-                $phong->tenHienThi = $nguoiKhac ? $nguoiKhac->ho_ten : 'Người dùng';
+                $phong->tenHienThi   = $nguoiKhac ? $nguoiKhac->ho_ten : 'Người dùng';
                 $phong->vaiTroHienThi = 'Người dùng';
             } else {
-                // User xem -> hiển thị tên nhà hàng nếu có, không thì người dùng khác
                 if ($phong->nhaHang) {
-                    $phong->tenHienThi = $phong->nhaHang->ten_nha_hang;
+                    $phong->tenHienThi   = $phong->nhaHang->ten_nha_hang;
                     $phong->vaiTroHienThi = 'Nhà hàng';
                 } else {
                     $nguoiKhac = ($phong->ma_nguoi_dung_1 == $user->ma_nguoi_dung)
                         ? $phong->nguoiDung2
                         : $phong->nguoiDung1;
-                    $phong->tenHienThi = $nguoiKhac ? $nguoiKhac->ho_ten : 'Người dùng';
+                    $phong->tenHienThi   = $nguoiKhac ? $nguoiKhac->ho_ten : 'Người dùng';
                     $phong->vaiTroHienThi = 'Người dùng';
                 }
             }
@@ -51,54 +67,96 @@ class PhongChatController extends Controller
         return view('tinnhan.index', compact('phongChats','user','userVaiTro'));
     }
 
-    // Tạo phòng chat nếu chưa có
+    /**
+     * =========================
+     * TẠO PHÒNG CHAT
+     * =========================
+     */
     public function store(Request $request)
     {
-        $user = session('user');
-        if (!$user) abort(403);
+        $maNguoiDung = Session::get('ma_nguoi_dung');
+        if (!$maNguoiDung) {
+            return redirect()->route('login')->with('error', 'Bạn cần đăng nhập');
+        }
+
+        $user = NguoiDung::find($maNguoiDung);
+        if (!$user) {
+            Session::forget('ma_nguoi_dung');
+            return redirect()->route('login')->with('error', 'Phiên đăng nhập không hợp lệ.');
+        }
+
+        $userRole  = Session::get('user_role');
+        $maNhaHang = Session::get('ma_nha_hang');
 
         $request->validate([
-            'loai_phong' => 'required|in:user_user,user_nhahang,nhahang_nhahang',
+            'loai_phong'      => 'required|in:user_user,user_nhahang,nhahang_nhahang',
             'ma_nguoi_dung_2' => 'required|exists:nguoi_dung,ma_nguoi_dung',
-            'ma_nha_hang' => 'nullable|exists:nha_hang,ma_nha_hang',
+            'ma_nha_hang'     => 'nullable|exists:nha_hang,ma_nha_hang',
         ]);
 
         // Kiểm tra phòng chat đã tồn tại
         $phongChat = PhongChat::where('loai_phong', $request->loai_phong)
             ->where(function($q) use ($user, $request){
-                $q->where([['ma_nguoi_dung_1',$user->ma_nguoi_dung], ['ma_nguoi_dung_2',$request->ma_nguoi_dung_2]])
-                  ->orWhere([['ma_nguoi_dung_1',$request->ma_nguoi_dung_2], ['ma_nguoi_dung_2',$user->ma_nguoi_dung]]);
-            })->first();
+                $q->where([
+                    ['ma_nguoi_dung_1',$user->ma_nguoi_dung],
+                    ['ma_nguoi_dung_2',$request->ma_nguoi_dung_2]
+                ])
+                ->orWhere([
+                    ['ma_nguoi_dung_1',$request->ma_nguoi_dung_2],
+                    ['ma_nguoi_dung_2',$user->ma_nguoi_dung]
+                ]);
+            })
+            ->when($request->ma_nha_hang, function($q) use ($request){
+                $q->where('ma_nha_hang', $request->ma_nha_hang);
+            })
+            ->first();
 
+        // Nếu chưa có thì tạo mới
         if (!$phongChat) {
             $phongChat = PhongChat::create([
-                'loai_phong' => $request->loai_phong,
-                'ma_nguoi_dung_1' => $user->vai_tro === 'nhahang' ? $request->ma_nguoi_dung_2 : $user->ma_nguoi_dung,
-                'ma_nguoi_dung_2' => $user->vai_tro === 'nhahang' ? $user->ma_nguoi_dung : $request->ma_nguoi_dung_2,
-                'ma_nha_hang' => $user->vai_tro === 'nhahang' ? $user->ma_nha_hang : $request->ma_nha_hang,
+                'loai_phong'      => $request->loai_phong,
+                'ma_nguoi_dung_1' => $user->ma_nguoi_dung,
+                'ma_nguoi_dung_2' => $request->ma_nguoi_dung_2,
+                'ma_nha_hang'     => $request->ma_nha_hang,
             ]);
         }
 
         return redirect()->route('phongchat.show', $phongChat->id);
     }
 
-    // Hiển thị tin nhắn trong phòng chat
+    /**
+     * =========================
+     * HIỂN THỊ PHÒNG CHAT
+     * =========================
+     */
     public function show($id)
     {
-        $user = session('user');
-        if (!$user) return redirect()->route('login');
+        $maNguoiDung = Session::get('ma_nguoi_dung');
+        if (!$maNguoiDung) {
+            return redirect()->route('login')->with('error', 'Bạn cần đăng nhập');
+        }
+
+        $user = NguoiDung::find($maNguoiDung);
+        if (!$user) {
+            Session::forget('ma_nguoi_dung');
+            return redirect()->route('login')->with('error', 'Phiên đăng nhập không hợp lệ.');
+        }
+
+        $userRole  = Session::get('user_role');
+        $maNhaHang = Session::get('ma_nha_hang');
 
         $phongChat = PhongChat::with(['tinNhans.nguoiGui','nguoiDung1','nguoiDung2','nhaHang'])
             ->findOrFail($id);
 
-        // Kiểm tra quyền xem phòng chat
-        $thamGia = ($phongChat->ma_nguoi_dung_1 == $user->ma_nguoi_dung) ||
-                   ($phongChat->ma_nguoi_dung_2 == $user->ma_nguoi_dung) ||
-                   ($user->vai_tro === 'nhahang' && $phongChat->ma_nha_hang == $user->ma_nha_hang);
+        // Kiểm tra quyền tham gia
+        $thamGia = ($phongChat->ma_nguoi_dung_1 == $user->ma_nguoi_dung)
+                || ($phongChat->ma_nguoi_dung_2 == $user->ma_nguoi_dung)
+                || ($userRole === 'nhahang' && $phongChat->ma_nha_hang == $maNhaHang);
+
         if (!$thamGia) abort(403);
 
         // Xác định tên hiển thị
-        if ($user->vai_tro === 'nhahang') {
+        if ($userRole === 'nhahang') {
             $nguoiKhac = ($phongChat->ma_nguoi_dung_1 == $user->ma_nguoi_dung)
                 ? $phongChat->nguoiDung2
                 : $phongChat->nguoiDung1;

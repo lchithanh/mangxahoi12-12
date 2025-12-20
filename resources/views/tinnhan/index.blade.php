@@ -11,13 +11,32 @@
     @else
         <div class="list-group">
             @foreach($phongChats as $phong)
-                <a href="{{ route('phongchat.show', $phong->id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                @php
+                    $soTinMoi = $phong->tinNhans->where('da_doc', 0)->count();
+                    $tinCuoi  = $phong->tinNhans->sortByDesc('thoi_gian_tao')->first();
+                @endphp
+
+               <a href="{{ route('tinnhan.phong.show', $phong->id) }}"
+                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+
                     <div>
-                        <strong>{{ $phong->vaiTroHienThi }}:</strong> {{ $phong->tenHienThi }}
+                        <div>
+                            <strong>{{ $phong->vaiTroHienThi }}:</strong>
+                            {{ $phong->tenHienThi }}
+                        </div>
+
+                        @if($tinCuoi)
+                            <small class="text-muted">
+                                {{ \Carbon\Carbon::parse($tinCuoi->thoi_gian_tao)->diffForHumans() }}
+                            </small>
+                        @endif
                     </div>
-                    <span class="badge bg-secondary">
-                        {{ $phong->tinNhans->where('da_doc',0)->count() }} tin mới
-                    </span>
+
+                    @if($soTinMoi > 0)
+                        <span class="badge bg-danger">
+                            {{ $soTinMoi }} tin mới
+                        </span>
+                    @endif
                 </a>
             @endforeach
         </div>

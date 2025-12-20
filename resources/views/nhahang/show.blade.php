@@ -3,31 +3,44 @@
 @section('title', $nhaHang->ten_nha_hang ?? 'Nhà hàng')
 
 @section('maincontent')
+@php
+    $maNguoiDung = session('ma_nguoi_dung'); // ID người dùng hiện tại
+    $vaiTro      = session('user_role');     // Vai trò người dùng hiện tại
+@endphp
+
 <div class="container py-4">
 
     <!-- Header nhà hàng -->
-    <div class="header mb-4" 
-        style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
-               url('{{ $nhaHang->anh_dai_dien ? asset('uploads/anh_nha_hang'.$nhaHang->anh_dai_dien) : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4' }}') center/cover no-repeat; 
+    <div class="header mb-4"
+        style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+               url('{{ $nhaHang->anh_dai_dien ? asset($nhaHang->anh_dai_dien) : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4' }}') center/cover no-repeat;
                border-radius:10px; padding:50px 20px; color:#fff; text-align:center;">
         <h1>{{ $nhaHang->ten_nha_hang ?? 'Nhà hàng' }}</h1>
         <p>{{ $nhaHang->mo_ta ?? '' }}</p>
 
         <!-- Thông tin nhanh -->
-        <div class="info-bar mt-3 d-flex flex-wrap justify-content-center gap-3">
+        <div class="info-bar mt-3">
             <div class="info-item"><i class="fas fa-map-marker-alt"></i> {{ $nhaHang->dia_chi ?? 'Chưa có địa chỉ' }}</div>
             <div class="info-item"><i class="fas fa-phone"></i> {{ $nhaHang->so_dien_thoai ?? '(028) ...' }}</div>
-            <div class="info-item"><i class="fas fa-star"></i> {{ $nhaHang->phanLoai->ten_phan_loai ?? 'Chưa phân loại' }}</div>
-            <div class="info-item"><i class="fas fa-building"></i> {{ $nhaHang->khuVuc->ten_khu_vuc ?? 'Chưa xác định khu vực' }}</div>
-            <div class="info-item"><i class="fas fa-user"></i> {{ $nhaHang->chuSoHuu->ho_ten ?? 'Chưa xác định' }}</div>
+            <div class="info-item"><i class="fas fa-star"></i> {{ optional($nhaHang->phanLoai)->ten_phan_loai ?? 'Chưa phân loại' }}</div>
+            <div class="info-item"><i class="fas fa-building"></i> {{ optional($nhaHang->khuVuc)->ten_khu_vuc ?? 'Chưa xác định khu vực' }}</div>
+            <div class="info-item"><i class="fas fa-user"></i> {{ optional($nhaHang->chuSoHuu)->ho_ten ?? 'Chưa xác định' }}</div>
         </div>
 
-        <!-- Nút Edit nhà hàng chỉ hiện khi người đăng nhập là chủ sở hữu -->
-        @if(session('user') && session('user')->ma_nguoi_dung === $nhaHang->ma_chu_so_huu)
-            <div class="mt-3">
+        <!-- Nút Edit / Xóa -->
+        @if($maNguoiDung && $maNguoiDung === $nhaHang->ma_chu_so_huu)
+            <div class="mt-3 d-flex justify-content-center gap-2">
                 <a href="{{ route('nhahang.edit', $nhaHang->ma_nha_hang) }}" class="btn btn-warning">
-                    <i class="bi bi-pencil-square"></i> Chỉnh sửa nhà hàng
+                    <i class="bi bi-pencil-square"></i> Chỉnh sửa
                 </a>
+                <form action="{{ route('nhahang.destroy', $nhaHang->ma_nha_hang) }}" method="POST"
+                      onsubmit="return confirm('Bạn có chắc muốn xóa nhà hàng này?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Xóa
+                    </button>
+                </form>
             </div>
         @endif
     </div>
@@ -37,74 +50,18 @@
         <div class="col-lg-4 mb-4">
             <div class="card text-center mb-4">
                 <div class="card-body">
-                    <!-- Ảnh đại diện nhà hàng -->
-                    @if(!empty($nhaHang->anh_dai_dien))
-                        <img src="{{ asset('./uploads/anh_nha_hang' . $nhaHang->anh_dai_dien) }}" 
-                             class="rounded-circle mb-3" 
-                             alt="{{ $nhaHang->ten_nha_hang }}" 
-                             style="width:150px; height:150px; object-fit:cover;">
-                    @else
-                        <i class="fas fa-utensils fa-7x text-secondary mb-3"></i>
-                    @endif
+                   <img src="{{ $nhaHang->anh_dai_dien ? asset($nhaHang->anh_dai_dien) : asset('images/no-image.png') }}"
+                        alt="{{ $nhaHang->ten_nha_hang ?? 'Nhà hàng' }}"
+                        class="img-fluid rounded mb-3"
+                        style="max-height:300px; object-fit:cover;">
 
-                    <!-- Thông tin cơ bản -->
                     <h4 class="card-title">{{ $nhaHang->ten_nha_hang ?? 'Tên chưa có' }}</h4>
-                    <p class="text-muted">{{ $nhaHang->phanLoai->ten_phan_loai ?? 'Chưa phân loại' }}</p>
-                    <p class="text-muted">{{ $nhaHang->khuVuc->ten_khu_vuc ?? 'Chưa xác định khu vực' }}</p>
-                    <p class="text-muted">Chủ sở hữu: {{ $nhaHang->chuSoHuu->ho_ten ?? 'Chưa xác định' }}</p>
+                    <p class="text-muted">{{ optional($nhaHang->phanLoai)->ten_phan_loai ?? 'Chưa phân loại' }}</p>
+                    <p class="text-muted">{{ optional($nhaHang->khuVuc)->ten_khu_vuc ?? 'Chưa xác định khu vực' }}</p>
+                    <p class="text-muted">Chủ sở hữu: {{ optional($nhaHang->chuSoHuu)->ho_ten ?? 'Chưa xác định' }}</p>
                     <p class="text-muted mb-0">Địa chỉ: {{ $nhaHang->dia_chi ?? 'Chưa có địa chỉ' }}</p>
                     <p class="text-muted mb-0">Điện thoại: {{ $nhaHang->so_dien_thoai ?? '(028) ...' }}</p>
                     <p class="text-muted mb-0">Giờ mở cửa: {{ $nhaHang->gio_mo_cua ?? 'Chưa cập nhật' }}</p>
-                    
-                    <!-- Nút theo dõi & nhắn tin -->
-                    @if(session('user'))
-                        <div class="d-flex gap-2 mt-3">
-                            @php
-                                $isFollowingNh = \App\Models\TheoDoi::where('ma_nguoi_dung', session('user')->ma_nguoi_dung)
-                                    ->where('ma_nha_hang', $nhaHang->ma_nha_hang)
-                                    ->exists();
-                            @endphp
-
-                            @if($isFollowingNh)
-                                <a href="{{ route('follow.nhahang', $nhaHang->ma_nha_hang) }}" class="btn btn-outline-danger btn-sm flex-fill">
-                                    <i class="bi bi-person-dash"></i> Hủy theo dõi
-                                </a>
-                            @else
-                                <a href="{{ route('follow.nhahang', $nhaHang->ma_nha_hang) }}" class="btn btn-primary btn-sm flex-fill">
-                                    <i class="bi bi-person-plus"></i> Theo dõi
-                                </a>
-                            @endif
-
-                            @if($nhaHang->chuSoHuu)
-                                @php
-                                    $user = session('user');
-                                    // Kiểm tra phòng chat đã tồn tại giữa user và nhà hàng
-                                    $phongChat = \App\Models\PhongChat::where('loai_phong', 'user_nhahang')
-                                        ->where('ma_nha_hang', $nhaHang->ma_nha_hang)
-                                        ->where(function($q) use ($user) {
-                                            $q->where('ma_nguoi_dung_1', $user->ma_nguoi_dung)
-                                              ->orWhere('ma_nguoi_dung_2', $user->ma_nguoi_dung);
-                                        })->first();
-                                @endphp
-
-                                @if($phongChat)
-                                    <a href="{{ route('phongchat.show', $phongChat->id) }}" class="btn btn-success btn-sm flex-fill">
-                                        Nhắn tin
-                                    </a>
-                                @else
-                                    <form action="{{ route('phongchat.store') }}" method="POST" class="d-inline flex-fill">
-                                        @csrf
-                                        <input type="hidden" name="loai_phong" value="user_nhahang">
-                                        <input type="hidden" name="ma_nguoi_dung_2" value="{{ $nhaHang->ma_chu_so_huu }}">
-                                        <input type="hidden" name="ma_nha_hang" value="{{ $nhaHang->ma_nha_hang }}">
-                                        <button type="submit" class="btn btn-success btn-sm w-100">Nhắn tin</button>
-                                    </form>
-                                @endif
-                            @endif
-                        </div>
-                    @else
-                        <p class="text-muted mt-3">Đăng nhập để theo dõi và nhắn tin cho nhà hàng.</p>
-                    @endif
                 </div>
             </div>
 
@@ -119,9 +76,8 @@
             </div>
         </div>
 
-        <!-- Cột phải: gallery, menu, bài viết -->
+        <!-- Cột phải: gallery & bài viết -->
         <div class="col-lg-8">
-
             <!-- Gallery hình ảnh -->
             @if(!empty($nhaHang->gallery) && count($nhaHang->gallery) > 0)
                 <div class="card mb-4">
@@ -130,7 +86,7 @@
                         <div class="row">
                             @foreach($nhaHang->gallery as $img)
                                 <div class="col-4 mb-3">
-                                    <img src="{{ asset('storage/'.$img->path) }}" alt="Ảnh" class="img-fluid rounded">
+                                    <img src="{{ asset('uploads/anh_nha_hang/'.$img->path) }}" alt="Ảnh" class="img-fluid rounded">
                                 </div>
                             @endforeach
                         </div>
@@ -138,33 +94,7 @@
                 </div>
             @endif
 
-            <!-- Bài viết -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Bài Viết</h5>
-                    @include('baiviet.list', ['baiviets' => $nhaHang->baiViets])
-                </div>
-            </div>
-
-        </div>
+@include('baiviet.list', ['baiviets' => $nhaHang->baiViets])        </div>
     </div>
 </div>
 @endsection
-
-@push('styles')
-<style>
-    body { background-color: #f8f9fa; }
-
-    /* Header nhà hàng */
-    .header h1 { font-size:3rem; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-    .header p { font-size:1.3rem; font-style:italic; }
-
-    /* Thanh thông tin nhanh */
-    .info-bar { display:flex; flex-wrap:wrap; justify-content:center; gap:15px; margin-top:20px; }
-    .info-item { display:flex; align-items:center; gap:8px; background: rgba(0,0,0,0.5); padding:10px 15px; border-radius:8px; color:#fff; }
-
-    /* Gallery & Menu */
-    .gallery img, .menu-item img { object-fit:cover; border-radius:8px; }
-    .menu-item { display:flex; gap:15px; margin-bottom:15px; }
-</style>
-@endpush

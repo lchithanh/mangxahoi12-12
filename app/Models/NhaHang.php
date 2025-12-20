@@ -55,12 +55,15 @@ class NhaHang extends Model
     {
         return $this->hasMany(DanhGia::class, 'ma_nha_hang', 'ma_nha_hang');
     }
-    public function tinNhans()
-    {
-        return $this->hasMany(
-            TinNhan::class,
-            'ma_nha_hang',
-            'ma_nha_hang'
-        );
-    }
+ public function tinNhans()
+{
+    return $this->hasManyThrough(
+        TinNhan::class,   // Model cuối cùng
+        PhongChat::class, // Model trung gian
+        'ma_nha_hang',    // Khóa ngoại trên bảng phong_chat trỏ tới nha_hang
+        'ma_phong_chat',  // Khóa ngoại trên bảng tin_nhan trỏ tới phong_chat
+        'ma_nha_hang',    // Khóa chính trên bảng nha_hang
+        'id'              // Khóa chính trên bảng phong_chat (chính là id)
+    );
+}
 }

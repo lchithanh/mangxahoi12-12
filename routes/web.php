@@ -1,134 +1,163 @@
 <?php
 
-use App\Http\Controllers\DanhGiaController;
-use App\Http\Controllers\KhuVucController;
-use App\Http\Controllers\LuotThichController;
-use App\Http\Controllers\NhaHangController;
-use App\Http\Controllers\PhongChatController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\TheoDoiController;
-use App\Http\Controllers\ThongBaoController;
-use App\Http\Controllers\TinNhanController;
-use App\Http\Controllers\TrangCaNhanController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\LoginController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\BaiVietController;
-use App\Http\Controllers\LuuBaiVietController;
+use App\Http\Controllers\{
+    HomeController,
+    BaiVietController,
+    LuuBaiVietController,
+    LuotThichController,
+    DanhGiaController,
+    NhaHangController,
+    TheoDoiController,
+    PhongChatController,
+    TinNhanController,
+    TrangCaNhanController,
+    ThongBaoController,
+    KhuVucController,
+    RegisterController,
+    LoginController
+};
 
+/*
+|--------------------------------------------------------------------------
+| Trang chủ
+|--------------------------------------------------------------------------
+*/
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-use App\Http\Controllers\HomeController;
-
-Route::get('/', action: [HomeController::class, 'index'])->name('home');
-
-
-
-Route::get('baiviet', [BaiVietController::class, 'index'])->name('baiviet.index');
-Route::get('baiviet/create', [BaiVietController::class, 'create'])->name('baiviet.create');
-Route::post('baiviet', [BaiVietController::class, 'store'])->name(name: 'baiviet.store');
-// ĐẶT /edit trước /{id}
- Route::get('/{id}/edit', [BaiVietController::class, 'edit'])->name('baiviet.edit-bv');
-// Xóa ảnh bài viết riêng lẻ
-Route::delete('/anh/{id}', [BaiVietController::class, 'xoaAnh'])->name('baiviet.xoaAnh');
-
-Route::put('baiviet/{id}', [BaiVietController::class, 'update'])->name('baiviet.update');
-    //Route::post('/{id}/save', [BaiVietController::class, 'save'])->name('baiviet.save');
-
-Route::delete('baiviet/{id}', [BaiVietController::class, 'destroy'])->name('baiviet.destroy');
-
-//like
-Route::post('/baiviet/like/{id}', [LuotThichController::class, 'toggleLike'])->name('baiviet.like');
-Route::get('baiviet/{id}', [BaiVietController::class, 'show'])->name('baiviet.show');
-//save
-Route::get('/luu-bai-viet', [LuuBaiVietController::class, 'index'])->name('luu_baiviet.index');
-
-
-// Đăng ký
-Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
-
-// Đăng nhập
-
-Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('login', [LoginController::class, 'login'])->name('login.post');
-Route::get('logout', [LoginController::class, 'logout'])->name('logout');
-
-// Đăng xuất
+/*
+|--------------------------------------------------------------------------
+| Authentication (Session-based)
+|--------------------------------------------------------------------------
+*/
+Route::get('/login',  [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Trang cá nhân
+Route::get('/register',  [RegisterController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 
-// Hiển thị profile
-Route::get('/trangcanhan', [TrangCaNhanController::class, 'showProfile'])->name('trangcanhan.index');
-
-// Hiển thị form chỉnh sửa
-Route::get('/trangcanhan/setup', [TrangCaNhanController::class, 'showSetupForm'])->name('trangcanhan.edit');
-
-// Lưu thay đổi
-Route::post('/trangcanhan/setup', [TrangCaNhanController::class, 'saveSetup'])->name('trangcanhan.saveSetup');
-
-
-
-
-//nhà hàng
-Route::prefix('nhahang')->name('nhahang.')->group(function () {
-
-    Route::get('/', [NhaHangController::class, 'index'])->name('index');
-
-    Route::get('/create', [NhaHangController::class, 'create'])->name('create');
-    Route::post('/store', [NhaHangController::class, 'store'])->name('store');
-
-    Route::get('/{id}/edit', [NhaHangController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [NhaHangController::class, 'update'])->name('update');
-    Route::delete('/{id}', [NhaHangController::class, 'destroy'])->name('destroy');
-
-    Route::get('/{id}', [NhaHangController::class, 'show'])->name('show');
+/*
+|--------------------------------------------------------------------------
+| Trang cá nhân
+|--------------------------------------------------------------------------
+*/
+Route::prefix('trangcanhan')->name('trangcanhan.')->group(function () {
+    Route::get('/',        [TrangCaNhanController::class, 'showProfile'])->name('index');
+    Route::get('/setup',   [TrangCaNhanController::class, 'showSetupForm'])->name('edit');
+    Route::post('/setup',  [TrangCaNhanController::class, 'saveSetup'])->name('save');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Bài viết
+|--------------------------------------------------------------------------
+*/
+Route::prefix('baiviet')->name('baiviet.')->group(function () {
+    Route::get('/',        [BaiVietController::class, 'index'])->name('index');
+    Route::get('/create',  [BaiVietController::class, 'create'])->name('create');
+    Route::post('/',       [BaiVietController::class, 'store'])->name('store');
 
+    Route::get('/{id}',        [BaiVietController::class, 'show'])->name('show');
+    Route::get('/{id}/edit',   [BaiVietController::class, 'edit'])->name('edit');
+    Route::put('/{id}',        [BaiVietController::class, 'update'])->name('update');
+    Route::delete('/{id}',     [BaiVietController::class, 'destroy'])->name('destroy');
 
+    Route::post('/{id}/like',  [LuotThichController::class, 'toggleLike'])->name('like');
+    Route::post('/{id}/luu',   [LuuBaiVietController::class, 'toggle'])->name('save');
 
+    Route::delete('/anh/{id}', [BaiVietController::class, 'xoaAnh'])->name('xoaAnh');
+});
 
-// Danh sách đánh giá bài viết
-Route::get('danhgia/index/{ma_bai_viet}', [DanhGiaController::class, 'index'])->name('danhgia.index');
+/*
+|--------------------------------------------------------------------------
+| Bài viết đã lưu
+|--------------------------------------------------------------------------
+*/
+Route::get('/luu-bai-viet', [LuuBaiVietController::class, 'index'])
+    ->name('luu_baiviet.index');
 
-// Danh sách đánh giá nhà hàng
-Route::get('/danhgia/nha-hang/{ma_nha_hang}', [DanhGiaController::class, 'indexNhaHang'])->name('danhgia.indexNhaHang');
+/*
+|--------------------------------------------------------------------------
+| Nhà hàng
+|--------------------------------------------------------------------------
+*/
+Route::prefix('nhahang')->name('nhahang.')->group(function () {
+    Route::get('/',        [NhaHangController::class, 'index'])->name('index');
+    Route::get('/create',  [NhaHangController::class, 'create'])->name('create');
+    Route::post('/',       [NhaHangController::class, 'store'])->name('store');
 
-// Form tạo đánh giá
-Route::get('danhgia/create/{ma_bai_viet}', [DanhGiaController::class, 'create'])->name('danhgia.create');
-Route::post('danhgia/store/{ma_bai_viet}', [DanhGiaController::class, 'store'])->name('danhgia.store');
+    Route::get('/{id}',        [NhaHangController::class, 'show'])->name('show');
+    Route::get('/{id}/edit',   [NhaHangController::class, 'edit'])->name('edit');
+    Route::put('/{id}',        [NhaHangController::class, 'update'])->name('update');
+    Route::delete('/{id}',     [NhaHangController::class, 'destroy'])->name('destroy');
+});
 
-// Like đánh giá
-Route::post('/danhgia/like/{ma_danh_gia}', [DanhGiaController::class, 'like'])->name('danhgia.like');
+/*
+|--------------------------------------------------------------------------
+| Đánh giá
+|--------------------------------------------------------------------------
+*/
+Route::prefix('danhgia')->name('danhgia.')->group(function () {
+    Route::get('/baiviet/{id}',   [DanhGiaController::class, 'index'])->name('baiviet');
+    Route::get('/nhahang/{id}',   [DanhGiaController::class, 'indexNhaHang'])->name('nhahang');
 
+    Route::get('/create/{id}',    [DanhGiaController::class, 'create'])->name('create');
+    Route::post('/store/{id}',    [DanhGiaController::class, 'store'])->name('store');
 
-// Toggle lưu bài viết
-Route::post('/baiviet/save/{id}', [LuuBaiVietController::class, 'toggle'])->name('baiviet.save');
+    Route::get('/{id}/edit',      [DanhGiaController::class, 'edit'])->name('edit');
+    Route::put('/{id}',           [DanhGiaController::class, 'update'])->name('update');
+    Route::delete('/{id}',        [DanhGiaController::class, 'destroy'])->name('destroy');
 
-// Danh sách bài viết đã lưu
-Route::get('/luu-bai-viet', [LuuBaiVietController::class, 'index'])->name('luu_baiviet.index');
+    Route::post('/{id}/like',     [DanhGiaController::class, 'like'])->name('like');
+});
 
-//theo dõi
-Route::get('/follow/{id}', [TheoDoiController::class, 'follow'])->name('follow');
-    Route::get('/unfollow/{id}', [TheoDoiController::class, 'unfollow'])->name('unfollow');
- // Theo dõi nhà hàng
-Route::get('/follow/nhahang/{id}', [TheoDoiController::class, 'followNhaHang'])->name('follow.nhahang');
-Route::get('/unfollow/nhahang/{id}', [TheoDoiController::class, 'unfollowNhaHang'])->name('unfollow.nhahang');
+/*
+|--------------------------------------------------------------------------
+| Theo dõi
+|--------------------------------------------------------------------------
+*/
+Route::prefix('follow')->name('follow.')->group(function () {
+    Route::post('/user/{id}',     [TheoDoiController::class, 'follow'])->name('user');
+    Route::post('/nhahang/{id}',  [TheoDoiController::class, 'followNhaHang'])->name('nhahang');
 
-//tin nhắn
-Route::get('/tin-nhan', [TinNhanController::class, 'index'])->name('tinnhan.index');
-Route::post('/tin-nhan', [TinNhanController::class, 'store'])->name('tinnhan.store');
-// Route tạo phòng chat mới
-Route::post('/phongchat', [PhongChatController::class, 'store'])->name('phongchat.store');
+    Route::delete('/user/{id}',     [TheoDoiController::class, 'unfollow'])->name('user.un');
+    Route::delete('/nhahang/{id}',  [TheoDoiController::class, 'unfollowNhaHang'])->name('nhahang.un');
+});
 
-// Route hiển thị phòng chat
-Route::get('/phongchat/{id}', [PhongChatController::class, 'show'])->name('phongchat.show');
+/*
+|--------------------------------------------------------------------------
+| Phòng chat & Tin nhắn
+|--------------------------------------------------------------------------
+*/
 
+Route::prefix('tinnhan')->name('tinnhan.')->group(function () {
+    // Danh sách phòng chat
+    Route::get('/', [PhongChatController::class, 'index'])->name('index');
 
+    // Tạo phòng chat mới
+    Route::post('/phong', [PhongChatController::class, 'store'])->name('phong.store');
 
+    // Hiển thị chi tiết phòng chat
+    Route::get('/phong/{id}', [PhongChatController::class, 'show'])->name('phong.show');
+
+    // Gửi tin nhắn trong phòng chat
+    Route::post('/phong/{id}/gui', [TinNhanController::class, 'store'])->name('gui');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Thông báo
+|--------------------------------------------------------------------------
+*/
+Route::prefix('thong-bao')->name('thongbao.')->group(function () {
+    Route::get('/',                   [ThongBaoController::class, 'index'])->name('index');
+    Route::post('/{id}/da-doc',        [ThongBaoController::class, 'daDoc'])->name('dadoc');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Khu vực
+|--------------------------------------------------------------------------
+*/
 Route::resource('khuvuc', KhuVucController::class);
-
-Route::get('/thong-bao', [ThongBaoController::class, 'index'])
-    ->name('thongbao.index');

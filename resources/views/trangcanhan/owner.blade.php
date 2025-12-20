@@ -10,13 +10,13 @@
             <div class="card shadow-sm text-center">
                 <div class="card-body">
                     <div class="mb-3">
-                        <img src="{{ $user->anh_dai_dien && file_exists(public_path($user->anh_dai_dien))
+                        <img src="{{ $user->anh_dai_dien 
                                     ? asset($user->anh_dai_dien)
                                     : 'https://ui-avatars.com/api/?name=' . urlencode($user->ho_ten) }}"
                              class="rounded-circle border shadow-sm" width="128" height="128">
                     </div>
                     <h5>{{ $user->ho_ten }}</h5>
-                    <p class="text-muted">{{ $user->dia_chi ?? 'Địa chỉ chưa cập nhật' }}</p>
+                    <p class="text-muted">{{ $user->mo_ta ?? 'chưa cập nhật' }}</p>
 
                     <a href="{{ route('trangcanhan.edit') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
                         <i class="bi bi-pencil-square"></i> Chỉnh sửa hồ sơ
@@ -36,11 +36,15 @@
         <div class="col-lg-9 col-md-8">
             <h4 class="mb-3">Danh sách nhà hàng của bạn</h4>
 
-            {{-- Include nhahang/index.blade.php, truyền chỉ các nhà hàng của chủ sở hữu --}}
-            @include('nhahang.card', ['nhaHangs' => $nhaHangs])
+            {{-- Include nhahang/card.blade.php --}}
+            @if(isset($nhaHangs) && $nhaHangs->count() > 0)
+                @include('nhahang.card', ['nhaHangs' => $nhaHangs])
+            @else
+                <div class="text-muted">Bạn chưa có nhà hàng nào.</div>
+            @endif
 
             <!-- Danh sách đánh giá đã gửi -->
-            @if($danhGias && $danhGias->count() > 0)
+            @if(isset($danhGias) && $danhGias->count() > 0)
                 <div class="mt-4">
                     <h4>Đánh giá đã gửi</h4>
                     <div class="list-group">

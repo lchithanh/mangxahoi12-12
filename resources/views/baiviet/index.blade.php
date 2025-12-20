@@ -8,13 +8,19 @@
         <h3>Quản lý bài viết</h3>
 
         {{-- Chỉ chủ quán mới tạo bài viết --}}
-        @if($user && $user->vai_tro === 'chu_quan')
-            @if($user->nhaHang)
+        @php
+            $currentUserId   = session('ma_nguoi_dung');
+            $currentUserRole = session('user_role');
+            $hasNhaHang = $currentUserId ? \App\Models\NhaHang::where('ma_chu_so_huu',$currentUserId)->exists() : false;
+        @endphp
+
+        @if($currentUserId && $currentUserRole === 'chu_quan')
+            @if($hasNhaHang)
                 <a href="{{ route('baiviet.create') }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg"></i> Tạo bài viết
                 </a>
             @else
-                <a href="{{ route('nhahang.create', ['ma_chu_so_huu' => $user->ma_nguoi_dung]) }}" class="btn btn-warning btn-sm">
+                <a href="{{ route('nhahang.create', ['ma_chu_so_huu' => $currentUserId]) }}" class="btn btn-warning btn-sm">
                     <i class="bi bi-plus-lg"></i> Đăng ký Nhà Hàng
                 </a>
             @endif
@@ -62,7 +68,7 @@
                         </a>
 
                         {{-- Chỉ chủ bài viết mới có thể sửa/xóa --}}
-                        @if($user && $user->ma_nguoi_dung == $bv->ma_nguoi_dung)
+                        @if($currentUserId && $currentUserId == $bv->ma_nguoi_dang)
                             <a href="{{ route('baiviet.edit', $bv->ma_bai_viet) }}" class="btn btn-sm btn-warning">
                                 Sửa
                             </a>
@@ -80,7 +86,6 @@
                         @endif
                     </td>
                 </tr>
-
             @empty
                 <tr>
                     <td colspan="6" class="text-center text-muted">

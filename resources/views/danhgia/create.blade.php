@@ -1,62 +1,64 @@
-{{-- resources/views/danhgia/create.blade.php --}}
+@extends('layout.header')
+
+@section('title', 'Đánh giá bài viết')
+
+@section('maincontent')
 @php
-    // Nếu include từ index, truyền $baiViet, $user, $nhaHang
-    // Nếu mở trực tiếp qua create(), controller phải truyền đủ biến
+    // Lấy session id người dùng hiện tại
+    $currentUserId = session('ma_nguoi_dung');
 @endphp
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <h5 class="mb-3">Viết đánh giá cho bài viết</h5>
+<div class="container my-4">
 
-        {{-- Hiển thị lỗi validation --}}
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul class="mb-0">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+    @if(!$currentUserId)
+        <div class="alert alert-warning text-center">
+            Bạn cần <a href="{{ route('login') }}">đăng nhập</a> để đánh giá bài viết.
+        </div>
+    @else
+        <h3 class="mb-4">Đánh giá bài viết</h3>
 
-        <form action="{{ route('danhgia.store', ['ma_bai_viet' => $baiViet->ma_bai_viet]) }}" 
-              method="POST" enctype="multipart/form-data">
+        <form action="{{ route('danhgia.store', $baiViet->ma_bai_viet) }}" method="POST" enctype="multipart/form-data">
             @csrf
-
-            {{-- Hidden fields --}}
-            <input type="hidden" name="ma_bai_viet" value="{{ $baiViet->ma_bai_viet }}">
-            <input type="hidden" name="ma_nguoi_dung" value="{{ $user->ma_nguoi_dung ?? 0 }}">
-            <input type="hidden" name="ma_nha_hang" value="{{ $baiViet->ma_nha_hang }}">
 
             {{-- Điểm đánh giá --}}
             <div class="mb-3">
-                <label for="diem_danh_gia" class="form-label">Điểm đánh giá (1-5)</label>
-                <select name="diem_danh_gia" id="diem_danh_gia" class="form-select" required>
-                    <option value="">Chọn điểm</option>
-                    @for ($i = 1; $i <= 5; $i++)
-                        <option value="{{ $i }}">{{ $i }}</option>
+                <label class="form-label fw-bold">Đánh giá (1-5 sao)</label>
+                <select name="diem_danh_gia" class="form-select @error('diem_danh_gia') is-invalid @enderror" required>
+                    <option value="">Chọn số sao</option>
+                    @for($i=1; $i<=5; $i++)
+                        <option value="{{ $i }}" {{ old('diem_danh_gia') == $i ? 'selected' : '' }}>{{ $i }}</option>
                     @endfor
                 </select>
+                @error('diem_danh_gia')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
-            {{-- Nội dung đánh giá --}}
+            {{-- Bình luận --}}
             <div class="mb-3">
-                <label for="noi_dung" class="form-label">Nội dung đánh giá</label>
-                <textarea name="binh_luan" id="noi_dung" class="form-control" rows="4" placeholder="Viết đánh giá..." required></textarea>
+                <label class="form-label fw-bold">Bình luận</label>
+                <textarea name="binh_luan" rows="3" 
+                          class="form-control @error('binh_luan') is-invalid @enderror" 
+                          required>{{ old('binh_luan') }}</textarea>
+                @error('binh_luan')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
             {{-- Ảnh đánh giá --}}
             <div class="mb-3">
-                <label for="duong_dan_anh" class="form-label">Ảnh (nếu có)</label>
-                <input type="file" name="duong_dan_anh[]" id="duong_dan_anh" class="form-control" multiple accept="image/*">
+                <label class="form-label fw-bold">Ảnh đánh giá (tùy chọn, nhiều ảnh)</label>
+                <input type="file" name="anh_danh_gia[]" multiple 
+                       class="form-control @error('anh_danh_gia.*') is-invalid @enderror" 
+                       accept="image/*">
+                @error('anh_danh_gia.*')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">Gửi đánh giá</button>
-                <a href="{{ route('baiviet.show', $baiViet->ma_bai_viet) }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại bài viết
-                </a>
-            </div>
+            <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
         </form>
-    </div>
+    @endif
+
 </div>
+@endsection
