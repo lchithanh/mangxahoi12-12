@@ -18,6 +18,24 @@
     // Lấy thông tin user từ session
     $currentUserId   = session('ma_nguoi_dung'); // session id
     $currentUserRole = session('user_role');     // 'chu_quan', 'nhahang', 'user'
+
+    // Thông báo
+    $soThongBaoChuaDoc = 0;
+    $thongBaosHeader = [];
+
+    if($currentUserId) {
+        // 5 thông báo mới nhất cho dropdown / header
+        $thongBaosHeader = \App\Models\ThongBao::where('ma_nguoi_nhan', $currentUserId)
+            ->orderByDesc('thoi_gian_tao')
+            ->limit(5)
+            ->get();
+
+        // Số thông báo chưa đọc
+        $soThongBaoChuaDoc = \App\Models\ThongBao::where('ma_nguoi_nhan', $currentUserId)
+            ->where('da_doc', 0)
+            ->count();
+    }
+
 @endphp
 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
@@ -67,13 +85,14 @@
                 </a>
                 {{-- ICON THÔNG BÁO --}}
                 <a href="{{ route('thongbao.index') }}" class="btn btn-outline-dark btn-sm position-relative">
-                    <i class="bi bi-bell"></i>
-                    @if(isset($soThongBaoChuaDoc) && $soThongBaoChuaDoc > 0)
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ $soThongBaoChuaDoc }}
-                        </span>
-                    @endif
-                </a>
+    <i class="bi bi-bell"></i>
+    @if($soThongBaoChuaDoc > 0)
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ $soThongBaoChuaDoc }}
+        </span>
+    @endif
+</a>
+
 
 
                 {{-- AVATAR --}}

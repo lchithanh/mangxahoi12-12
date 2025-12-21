@@ -1,63 +1,99 @@
 @extends('layout.header')
 
-@section('title', $user->ho_ten ?? 'Trang cá nhân chủ quán')
+@section('title', 'Trang cá nhân - Chủ quán')
 
 @section('maincontent')
 <div class="container py-4">
-    <div class="row g-4">
-        <!-- Sidebar: Thông tin chủ quán -->
-        <div class="col-lg-3 col-md-4 mb-4">
-            <div class="card shadow-sm text-center">
-                <div class="card-body">
-                    <div class="mb-3">
-                        <img src="{{ $user->anh_dai_dien 
-                                    ? asset($user->anh_dai_dien)
-                                    : 'https://ui-avatars.com/api/?name=' . urlencode($user->ho_ten) }}"
-                             class="rounded-circle border shadow-sm" width="128" height="128">
-                    </div>
-                    <h5>{{ $user->ho_ten }}</h5>
-                    <p class="text-muted">{{ $user->mo_ta ?? 'chưa cập nhật' }}</p>
 
-                    <a href="{{ route('trangcanhan.edit') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
-                        <i class="bi bi-pencil-square"></i> Chỉnh sửa hồ sơ
+    {{-- ===== THÔNG TIN CHỦ QUÁN ===== --}}
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body d-flex align-items-center">
+            <img
+                src="{{ $user->anh_dai_dien
+                        ? asset($user->anh_dai_dien)
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($user->ho_ten) }}"
+                class="rounded-circle me-4 border"
+                width="100"
+                height="100"
+                alt="Avatar">
+
+            <div>
+                <h3 class="mb-1">{{ $user->ho_ten }}</h3>
+                <p class="text-muted mb-3">{{ $user->mo_ta ?? 'Chưa có mô tả' }}</p>
+
+                {{-- THỐNG KÊ --}}
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="text-center">
+                        <span class="fw-bold h5 d-block">{{ $user->baiviets_count }}</span>
+                        <small class="text-muted">Bài viết</small>
+                    </div>
+                    
+
+                    <a href="{{ route('trangcanhan.dangtheodoi', $user->ma_nguoi_dung) }}"
+                       class="btn btn-outline-primary position-relative">
+                        Đang theo dõi
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                            {{ $dangTheoDoiCount }}
+                        </span>
                     </a>
 
-                    <!-- Thông tin cơ bản -->
-                    <div class="mt-3 text-start">
-                        <h6>Bài viết: {{ $user->baiviets_count ?? 0 }}</h6>
-                        <h6>Theo dõi: {{ $user->followers_count ?? 0 }}</h6>
-                        <h6>Đang theo dõi: {{ $user->following_count ?? 0 }}</h6>
-                    </div>
+                    <a href="{{ route('trangcanhan.theodoi', $user->ma_nguoi_dung) }}"
+                       class="btn btn-outline-secondary position-relative">
+                        Người theo dõi
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">
+                            {{ $user->followers_count }}
+                        </span>
+                    </a>
+                    {{-- Nút Setup --}}
+        <a href="{{ route('trangcanhan.edit') }}" class="btn btn-warning">Setup trang cá nhân</a>
+
                 </div>
+                
             </div>
         </div>
+    </div>
 
-        <!-- Main Content: Danh sách nhà hàng -->
-        <div class="col-lg-9 col-md-8">
-            <h4 class="mb-3">Danh sách nhà hàng của bạn</h4>
+    {{-- ===== NHÀ HÀNG CỦA CHỦ QUÁN ===== --}}
+    <h4 class="mb-3">Nhà hàng của bạn</h4>
+    @if($nhaHangs->count())
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+            @foreach($nhaHangs as $nh)
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img
+                            src="{{ $nh->anh_dai_dien
+                                    ? asset($nh->anh_dai_dien)
+                                    : 'https://via.placeholder.com/300x200' }}"
+                            class="card-img-top"
+                            alt="{{ $nh->ten_nha_hang }}">
 
-            {{-- Include nhahang/card.blade.php --}}
-            @if(isset($nhaHangs) && $nhaHangs->count() > 0)
-                @include('nhahang.card', ['nhaHangs' => $nhaHangs])
-            @else
-                <div class="text-muted">Bạn chưa có nhà hàng nào.</div>
-            @endif
-
-            <!-- Danh sách đánh giá đã gửi -->
-            @if(isset($danhGias) && $danhGias->count() > 0)
-                <div class="mt-4">
-                    <h4>Đánh giá đã gửi</h4>
-                    <div class="list-group">
-                        @include('danhgia.list', ['danhGias' => $danhGias])
+                        <div class="card-body">
+                            <h5 class="card-title">{{ $nh->ten_nha_hang }}</h5>
+                            <p class="card-text text-muted">
+                                {{ Str::limit($nh->mo_ta, 100) }}
+                            </p>
+                            <a href="{{ route('nhahang.show', $nh->ma_nha_hang) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                Xem chi tiết
+                            </a>
+                        </div>
                     </div>
                 </div>
-            @else
-                <div class="text-center text-muted py-3">
-                    <i class="bi bi-file-earmark-text" style="font-size:2.5rem;"></i>
-                    <p class="mt-2">Chưa gửi đánh giá nào.</p>
-                </div>
-            @endif
+            @endforeach
         </div>
-    </div>
+    @else
+        <p class="text-muted mb-5">Bạn chưa có nhà hàng nào.</p>
+    @endif
+
+    {{-- ===== ĐÁNH GIÁ CỦA CHỦ QUÁN ===== --}}
+    <h4 class="mb-3">Đánh giá của bạn</h4>
+    @if($danhGias->count())
+        <div class="list-group shadow-sm">
+            @include('danhgia.list', ['danhGias' => $danhGias])
+        </div>
+    @else
+        <p class="text-muted">Bạn chưa có đánh giá nào.</p>
+    @endif
+
 </div>
 @endsection

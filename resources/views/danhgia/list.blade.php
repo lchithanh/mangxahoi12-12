@@ -1,7 +1,7 @@
 <div class="card shadow-sm">
     {{-- Nếu là chủ quán thì thêm style scroll --}}
     <div class="card-body"
-         @if(session('user') && session('user')->vai_tro === 'chu_quan')
+         @if(session('user_role') === 'chu_quan')
              style="max-height:400px; overflow-y:auto;"
          @endif>
 
@@ -63,7 +63,10 @@
                         @endif
 
                         {{-- Nút sửa / xóa (chỉ hiện cho chính chủ đánh giá) --}}
-                        @if(session('user') && session('user')->ma_nguoi_dung == $dg->ma_nguoi_dung)
+                        @php
+                            $currentUserId = session('ma_nguoi_dung'); // Lấy session id người dùng hiện tại
+                        @endphp
+                        @if($currentUserId && $currentUserId == $dg->ma_nguoi_dung)
                             <div class="mt-2">
                                 <a href="{{ route('danhgia.edit', $dg->ma_danh_gia) }}"
                                    class="btn btn-sm btn-warning">Sửa</a>

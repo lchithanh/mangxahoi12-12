@@ -28,19 +28,19 @@
 
                     {{-- Header: Người đăng + thời gian --}}
                     <div class="d-flex align-items-center mb-3">
-                        <a href="{{ route('trangcanhan.index', $baiViet->nguoiDang->ma_nguoi_dung) }}">
+                        <a href="{{ route('trangcanhan.index', $baiViet->nguoiDang->ma_nguoi_dung) }}" 
+                        class="d-flex align-items-center text-decoration-none text-dark">
                             <img src="{{ asset($baiViet->nguoiDang->anh_dai_dien ?? 'uploads/anh_nguoi_dung/default.png') }}"
-                                 class="rounded-circle me-2" width="50" height="50" style="object-fit:cover; cursor:pointer;">
+                                class="rounded-circle me-2"
+                                width="50" height="50"
+                                style="object-fit:cover; cursor:pointer;">
+                            <div>
+                                <strong>{{ $baiViet->nguoiDang->ho_ten ?? 'Người dùng ẩn danh' }}</strong><br>
+                                <small class="text-muted">{{ \Carbon\Carbon::parse($baiViet->thoi_gian_tao)->diffForHumans() }}</small>
+                            </div>
                         </a>
-                        <div>
-                            <a href="{{ route('trangcanhan.index', $baiViet->nguoiDang->ma_nguoi_dung) }}" 
-                               style="text-decoration:none; color:inherit; cursor:pointer;">
-                                <strong>{{ $baiViet->nguoiDang->ho_ten ?? 'Người dùng ẩn danh' }}</strong>
-                            </a>
-                            <br>
-                            <small class="text-muted">{{ \Carbon\Carbon::parse($baiViet->thoi_gian_tao)->diffForHumans() }}</small>
-                        </div>
                     </div>
+
 
                     {{-- Nội dung bài viết --}}
                     <p class="card-text">{{ $baiViet->noi_dung }}</p>
@@ -80,36 +80,32 @@
                             </a>
                         @endif
 
-                        <a href="{{ route('danhgia.baiviet', $baiViet->ma_bai_viet) }}"
-                           class="btn btn-primary">
-                            💬 Đánh giá <span class="badge bg-light text-dark">{{ $baiViet->danhGias()->count() }}</span>
-                        </a>
+                       <a href="{{ route('danhgia.index', $baiViet->ma_bai_viet) }}" class="btn btn-primary">
+    💬 Đánh giá <span class="badge bg-light text-dark">{{ $baiViet->danhGias()->count() }}</span>
+</a>
                     </div>
 
-                    {{-- Danh sách đánh giá --}}
-                    @if($baiViet->danhGias && $baiViet->danhGias->count() > 0)
-                        <div class="mt-3 border-top pt-2">
-                           @foreach($baiViet->danhGias as $danhGia)
-                                <div class="d-flex mb-2">
-                                    <a href="{{ route('trangcanhan.index', $danhGia->nguoiDung->ma_nguoi_dung) }}">
-                                        <img src="{{ asset($danhGia->nguoiDung->anh_dai_dien ?? 'uploads/anh_nguoi_dung/default.png') }}"
-                                             class="rounded-circle me-2"
-                                             width="40" height="40" style="object-fit:cover; cursor:pointer;">
-                                    </a>
-                                    <div class="flex-grow-1">
-                                        <a href="{{ route('trangcanhan.index', $danhGia->nguoiDung->ma_nguoi_dung) }}" 
-                                           style="text-decoration:none; color:inherit; cursor:pointer;">
-                                            <strong>{{ $danhGia->nguoiDung->ho_ten ?? 'Người dùng' }}</strong>
-                                        </a>
-                                        <small class="text-muted d-block">
-                                            {{ \Carbon\Carbon::parse($danhGia->thoi_gian_tao)->diffForHumans() }}
-                                        </small>
-                                        <div>{{ $danhGia->noi_dung }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+                   @foreach($baiViet->danhGias as $danhGia)
+    <div class="d-flex mb-2">
+        <a href="{{ route('trangcanhan.index', $danhGia->nguoiDung->ma_nguoi_dung) }}" 
+           class="d-flex align-items-center text-decoration-none text-dark me-2">
+            <img src="{{ asset($danhGia->nguoiDung->anh_dai_dien ?? 'uploads/anh_nguoi_dung/default.png') }}"
+                 class="rounded-circle"
+                 width="40" height="40" style="object-fit:cover; cursor:pointer;">
+        </a>
+        <div class="flex-grow-1">
+            <a href="{{ route('trangcanhan.index', $danhGia->nguoiDung->ma_nguoi_dung) }}" 
+               style="text-decoration:none; color:inherit; cursor:pointer;">
+                <strong>{{ $danhGia->nguoiDung->ho_ten ?? 'Người dùng' }}</strong>
+            </a>
+            <small class="text-muted d-block">
+                {{ \Carbon\Carbon::parse($danhGia->thoi_gian_tao)->diffForHumans() }}
+            </small>
+            <div>{{ $danhGia->noi_dung }}</div>
+        </div>
+    </div>
+@endforeach
+
 
                 </div>
             </div>

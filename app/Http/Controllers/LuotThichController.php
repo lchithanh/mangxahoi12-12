@@ -52,6 +52,8 @@ class LuotThichController extends Controller
                     'loai_thong_bao'=> 'thich',
                     'ma_doi_tuong'  => $baiViet->ma_bai_viet,
                     'noi_dung'      => "{$user->ho_ten} đã thích bài viết của bạn",
+                    'link'          => route('baiviet.show', $id), // <- link tới bài viết
+
                     'da_doc'        => 0,
                     'thoi_gian_tao' => now(),
                 ]);

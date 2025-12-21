@@ -121,7 +121,7 @@ class PhongChatController extends Controller
             ]);
         }
 
-        return redirect()->route('phongchat.show', $phongChat->id);
+        return redirect()->route('tinnhan.phong.show', $phongChat->id);
     }
 
     /**

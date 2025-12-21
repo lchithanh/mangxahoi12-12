@@ -19,13 +19,12 @@ class TrangCaNhanController extends Controller
     public function showSetupForm()
     {
         $maNguoiDung = Session::get('ma_nguoi_dung');
-
+        
         if (!$maNguoiDung) {
             return redirect()->route('login');
         }
 
         $user = NguoiDung::findOrFail($maNguoiDung);
-
         return view('trangcanhan.setup', compact('user'));
     }
 
@@ -37,7 +36,6 @@ class TrangCaNhanController extends Controller
     public function saveSetup(Request $request)
     {
         $maNguoiDung = Session::get('ma_nguoi_dung');
-
         if (!$maNguoiDung) {
             return redirect()->route('login');
         }
@@ -54,43 +52,41 @@ class TrangCaNhanController extends Controller
 
         // Cập nhật thông tin
         $user->update([
-            'ho_ten'  => $request->ho_ten,
-            'email'   => $request->email,
-            'mo_ta'   => $request->mo_ta,
+            'ho_ten' => $request->ho_ten,
+            'email'  => $request->email,
+            'mo_ta'  => $request->mo_ta,
         ]);
 
-        /**
-         * ============================
-         * UPLOAD AVATAR (DOCUMENT_ROOT)
-         * ============================
-         */
-        if ($request->hasFile('anh_dai_dien')) {
+        // Upload ảnh đại diện
+       // Upload ảnh đại diện
+if ($request->hasFile('anh_dai_dien')) {
+    // Xóa ảnh cũ nếu có
+    if (!empty($user->anh_dai_dien) && File::exists($_SERVER['DOCUMENT_ROOT'] . '/' . $user->anh_dai_dien)) {
+        File::delete($_SERVER['DOCUMENT_ROOT'] . '/' . $user->anh_dai_dien);
+    }
 
-            // Xóa ảnh cũ
-            if (
-                $user->anh_dai_dien &&
-                File::exists($_SERVER['DOCUMENT_ROOT'] . '/' . $user->anh_dai_dien)
-            ) {
-                File::delete($_SERVER['DOCUMENT_ROOT'] . '/' . $user->anh_dai_dien);
-            }
+    // Lấy file upload
+    $file = $request->file('anh_dai_dien');
+    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    $uploadPath = 'uploads/anh_nguoi_dung';
 
-            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_nguoi_dung';
-            if (!File::exists($uploadPath)) {
-                File::makeDirectory($uploadPath, 0755, true);
-            }
+    // Tạo thư mục nếu chưa có
+    if (!File::exists($_SERVER['DOCUMENT_ROOT'] . '/' . $uploadPath)) {
+        File::makeDirectory($_SERVER['DOCUMENT_ROOT'] . '/' . $uploadPath, 0755, true);
+    }
 
-            $file = $request->file('anh_dai_dien');
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move($uploadPath, $fileName);
+    // Di chuyển file
+    $file->move($_SERVER['DOCUMENT_ROOT'] . '/' . $uploadPath, $fileName);
 
-            $user->update([
-                'anh_dai_dien' => 'uploads/anh_nguoi_dung/' . $fileName
-            ]);
-        }
+    // Cập nhật DB
+    $user->update([
+        'anh_dai_dien' => $uploadPath . '/' . $fileName
+    ]);
+}
 
-        return redirect()
-            ->route('trangcanhan.index')
-            ->with('success', '✅ Cập nhật thông tin cá nhân thành công');
+return redirect()->route('trangcanhan.index', ['id' => $user->ma_nguoi_dung])
+                 ->with('success', '✅ Cập nhật thông tin cá nhân thành công');   
+                
     }
 
     /**
@@ -98,58 +94,95 @@ class TrangCaNhanController extends Controller
      * HIỂN THỊ TRANG CÁ NHÂN
      * =====================================================
      */
-    public function showProfile()
-    {
+public function showProfile($maNguoiDung = null)
+{
+    if (!$maNguoiDung) {
         $maNguoiDung = Session::get('ma_nguoi_dung');
+    }
 
-        if (!$maNguoiDung) {
-            return redirect()->route('login');
-        }
+    if (!$maNguoiDung) {
+        return redirect()->route('login');
+    }
 
-        $user = NguoiDung::withCount('baiviets')
-            ->with(['baiviets.anhBaiViets'])
-            ->findOrFail($maNguoiDung);
+    $user = NguoiDung::withCount([
+        'baiviets',
+        'followers',
+        'followingUsers',
+        'followingNhaHangs',
+        'danhGias'
+    ])
+    ->with(['baiviets.anhBaiViets'])
+    ->findOrFail($maNguoiDung);
 
-        // Followers / Following
-        $user->followers_count = $user->followers()->count();
-        $user->following_count = $user->following()->count();
+    // Đánh giá của user (chung cho cả chủ quán và người thường)
+    $danhGias = $user->danhGias()
+        ->with('baiViet.nhaHang')
+        ->orderByDesc('thoi_gian_tao')
+        ->get();
 
-        /**
-         * =========================
-         * TRANG CÁ NHÂN CHỦ QUÁN
-         * =========================
-         */
-        if ($user->vai_tro === 'chu_quan') {
+    // Người đang theo dõi và đang theo dõi ai
+    $followers = $user->followers()->get();
+    $followingUsers = $user->followingUsers()->get();
+    $followingNhaHangs = $user->followingNhaHangs()->get();
 
-            $nhaHangs = NhaHang::where('ma_chu_so_huu', $user->ma_nguoi_dung)
-                ->with('baiviets.anhBaiViets')
-                ->get();
+    $dangTheoDoiCount = $followingUsers->count() + $followingNhaHangs->count();
 
-            $showDanhSach = $nhaHangs->count() >= 2;
-
-            $danhGias = DanhGia::with('baiViet.nhaHang')
-                ->where('ma_nguoi_dung', $user->ma_nguoi_dung)
-                ->orderByDesc('thoi_gian_tao')
-                ->get();
-
-            return view('trangcanhan.owner', compact(
-                'user',
-                'nhaHangs',
-                'showDanhSach',
-                'danhGias'
-            ));
-        }
-
-        /**
-         * =========================
-         * TRANG CÁ NHÂN NGƯỜI DÙNG
-         * =========================
-         */
-        $danhGias = $user->danhGias()
-            ->with('baiViet.nhaHang')
-            ->orderByDesc('thoi_gian_tao')
+    if ($user->vai_tro === 'chu_quan') {
+        // Chủ quán có thêm danh sách nhà hàng
+        $nhaHangs = NhaHang::where('ma_chu_so_huu', $user->ma_nguoi_dung)
+            ->with('baiviets.anhBaiViets')
             ->get();
 
-        return view('trangcanhan.user', compact('user', 'danhGias'));
+        $showDanhSach = $nhaHangs->count() >= 2;
+
+        return view('trangcanhan.owner', compact(
+            'user',
+            'nhaHangs',
+            'showDanhSach',
+            'danhGias',
+            'followers',
+            'followingUsers',
+            'followingNhaHangs',
+            'dangTheoDoiCount'
+        ));
+    }
+
+    // Người dùng bình thường
+    return view('trangcanhan.user', compact(
+        'user',
+        'danhGias',
+        'followers',
+        'followingUsers',
+        'followingNhaHangs'
+    ));
+}
+
+    /**
+     * =====================================================
+     * XEM DANH SÁCH ĐANG THEO DÕI
+     * =====================================================
+     */
+    public function showFollowing($maNguoiDung)
+    {
+        $user = NguoiDung::findOrFail($maNguoiDung);
+
+        $followingUsers = $user->followingUsers()->get();
+        $followingNhaHangs = $user->followingNhaHangs()->get();
+
+        return view('trangcanhan.dangtheodoi', compact('user', 'followingUsers', 'followingNhaHangs'));
+    }
+
+    /**
+     * =====================================================
+     * XEM DANH SÁCH NGƯỜI THEO DÕI TÔI
+     * =====================================================
+     */
+    public function showFollowers($maNguoiDung)
+    {
+        $user = NguoiDung::findOrFail($maNguoiDung);
+
+        $followers = $user->followers()->get();
+
+        return view('trangcanhan.theodoi', compact('user', 'followers'));
     }
 }

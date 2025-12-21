@@ -27,10 +27,9 @@ class NhaHang extends Model
     ];
 
     // Quan hệ với chủ sở hữu
-    public function chuSoHuu()
-    {
-        return $this->belongsTo(NguoiDung::class, 'ma_chu_so_huu', 'ma_nguoi_dung');
-    }
+   public function chuSoHuu() {
+    return $this->belongsTo(NguoiDung::class, 'ma_chu_so_huu', 'ma_nguoi_dung');
+}
 
     // Quan hệ với khu vực
     public function khuVuc()
@@ -55,6 +54,12 @@ class NhaHang extends Model
     {
         return $this->hasMany(DanhGia::class, 'ma_nha_hang', 'ma_nha_hang');
     }
+    // Quan hệ với phòng chat
+public function phongChats()
+{
+    return $this->hasMany(PhongChat::class, 'ma_nha_hang', 'ma_nha_hang');
+}
+
  public function tinNhans()
 {
     return $this->hasManyThrough(
@@ -66,4 +71,16 @@ class NhaHang extends Model
         'id'              // Khóa chính trên bảng phong_chat (chính là id)
     );
 }
+//lấy luôn người dùng theo dõi
+public function nguoiDungTheoDoi()
+{
+    return $this->belongsToMany(
+        NguoiDung::class,
+        'theo_doi',
+        'ma_nha_hang',
+        'ma_nguoi_dung'
+    );
+}
+
+
 }

@@ -40,12 +40,23 @@ class NguoiDung extends Model
     }
     // Người theo dõi
   // Những người mà tôi đang theo dõi
-public function following() {
+// Những người mà tôi đang theo dõi (nguoi dung)
+public function followingUsers() {
     return $this->belongsToMany(
         NguoiDung::class,
         'theo_doi',
         'ma_nguoi_dung',
         'ma_nguoi_duoc_theo_doi'
+    );
+}
+
+// Nhà hàng mà tôi đang theo dõi
+public function followingNhaHangs() {
+    return $this->belongsToMany(
+        NhaHang::class,
+        'theo_doi',
+        'ma_nguoi_dung',
+        'ma_nha_hang'
     );
 }
 
