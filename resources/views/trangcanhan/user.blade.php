@@ -68,9 +68,9 @@
 
                 {{-- Chỉ chính chủ mới được chỉnh sửa --}}
                 @if($isOwner)
-                    <a href="{{ route('trangcanhan.edit') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">
-                        <i class="bi bi-pencil-square"></i> Chỉnh sửa hồ sơ
-                    </a>
+                    <a href="{{ route('trangcanhan.edit') }}" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">
+                            <i class="bi bi-gear-fill me-1"></i> Setup
+                        </a>
                 @endif
             </div>
         </div>

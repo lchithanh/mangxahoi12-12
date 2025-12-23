@@ -1,8 +1,4 @@
-@extends('layout.header')
 
-@section('title', 'Quản lý Bài viết')
-
-@section('maincontent')
 <div class="container my-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Quản lý bài viết</h3>
@@ -96,4 +92,3 @@
         </tbody>
     </table>
 </div>
-@endsection
