@@ -81,13 +81,16 @@ class TheoDoiController extends Controller
         ]);
 
         $nhaHang = NhaHang::findOrFail($maNhaHang);
+        // Lấy thông tin nhà hàng và người gửi để tạo thông báo
+        $nhaHang = NhaHang::findOrFail($maNhaHang);
+        $nguoiGui = NguoiDung::find($maNguoiDung); // Lấy thông tin người đang thực hiện hành động
 
         ThongBao::create([
             'ma_nguoi_nhan' => $nhaHang->ma_chu_so_huu,
             'ma_nguoi_gui' => $maNguoiDung,
             'loai_thong_bao' => 'theo_doi',
             'ma_doi_tuong' => $maNhaHang,
-            'noi_dung' => session('ho_ten') . " đã theo dõi nhà hàng của bạn",
+            'noi_dung' => $nguoiGui->ho_ten . " đã theo dõi nhà hàng của bạn",
             'da_doc' => 0,
             'thoi_gian_tao' => now(),
         ]);

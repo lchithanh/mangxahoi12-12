@@ -140,3 +140,4 @@
         togglePhanLoaiKhac();
     }
 </script>
+@endsection

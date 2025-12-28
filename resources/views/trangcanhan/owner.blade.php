@@ -44,36 +44,27 @@
     </div>
 
     {{-- ===== NHÀ HÀNG CỦA CHỦ QUÁN ===== --}}
-    <div class="mb-4">
-        <h5 class="fw-bold mb-3 border-start border-primary border-4 ps-2">Nhà hàng của bạn</h5>
-        @if($nhaHangs->count())
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                @foreach($nhaHangs as $nh)
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
-                            <img src="{{ $nh->anh_dai_dien ? asset($nh->anh_dai_dien) : 'https://via.placeholder.com/400x250' }}"
-                                 class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ $nh->ten_nha_hang }}">
+<div class="mb-4">
+    <h5 class="fw-bold mb-3 border-start border-primary border-4 ps-2">
+        Nhà hàng của bạn
+    </h5>
 
-                            <div class="card-body">
-                                <h6 class="fw-bold text-dark">{{ $nh->ten_nha_hang }}</h6>
-                                <p class="text-muted small mb-3">
-                                    {{ Str::limit($nh->mo_ta, 80) }}
-                                </p>
-                                <a href="{{ route('nhahang.show', $nh->ma_nha_hang) }}"
-                                   class="btn btn-sm btn-outline-primary w-100 rounded-3">
-                                    Xem chi tiết
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="bg-light rounded-4 p-4 text-center border">
-                <p class="text-muted mb-0 small">Bạn chưa đăng ký nhà hàng nào.</p>
-            </div>
-        @endif
-    </div>
+    @if($nhaHangs->count())
+        @include('nhahang.card', [
+            'nhaHangs'       => $nhaHangs,
+            'sessionUserId'  => session('ma_nguoi_dung'),
+            'sessionVaiTro'  => session('user_role')
+        ])
+    @else
+        <div class="bg-light rounded-4 p-4 text-center border">
+            <i class="bi bi-shop h3 text-muted"></i>
+            <p class="text-muted mb-0 small">
+                Bạn chưa đăng ký nhà hàng nào.
+            </p>
+        </div>
+    @endif
+</div>
+
 
     {{-- ===== ĐÁNH GIÁ CỦA CHỦ QUÁN ===== --}}
     <div>

@@ -59,39 +59,33 @@
             </div>
 
             {{-- Khu vực --}}
-            <div class="mb-3">
-                <label for="ma_khu_vuc" class="form-label">Khu Vực</label>
-                <select name="ma_khu_vuc" id="ma_khu_vuc" class="form-select" onchange="toggleKhuVucKhac()">
-                    <option value="">-- Chọn Khu Vực --</option>
-                    @foreach($khuVucs as $khuVuc)
-                        <option value="{{ $khuVuc->ma_khu_vuc }}"
-                            {{ old('ma_khu_vuc', $nhaHang->ma_khu_vuc) == $khuVuc->ma_khu_vuc ? 'selected' : '' }}>
-                            {{ $khuVuc->ten_khu_vuc }}
-                        </option>
-                    @endforeach
-                    <option value="khac">Khác</option>
-                </select>
-                <input type="text" name="ten_khu_vuc_moi" id="ten_khu_vuc_moi" 
-                       class="form-control mt-2" placeholder="Nhập khu vực mới" style="display:none;" 
-                       value="{{ old('ten_khu_vuc_moi') }}">
-            </div>
-
+            <select name="ma_khu_vuc" id="ma_khu_vuc" class="form-select" onchange="toggleKhuVucKhac()">
+    @foreach($khuVucs as $kh)
+        <option value="{{ $kh->ma_khu_vuc }}" {{ $nhaHang->ma_khu_vuc == $kh->ma_khu_vuc ? 'selected' : '' }}>
+            {{ $kh->ten_khu_vuc }}
+        </option>
+    @endforeach
+    <option value="khac">Khác (Thêm mới)</option>
+</select>
+<input type="text" name="ten_khu_vuc_moi" id="ten_khu_vuc_moi" class="form-control mt-2" style="display:none;" placeholder="Nhập tên khu vực mới">
             {{-- Phân loại --}}
             <div class="mb-3">
-                <label for="phan_loai" class="form-label">Phân Loại</label>
+                <label for="phan_loai" class="form-label fw-bold">Phân Loại</label>
                 <select name="phan_loai" id="phan_loai" class="form-select" onchange="togglePhanLoaiKhac()">
                     <option value="">-- Chọn Phân Loại --</option>
-                    @foreach($phanLoais as $phanLoai)
-                        <option value="{{ $phanLoai->ten_phan_loai }}"
-                            {{ old('phan_loai', $nhaHang->phanLoai->ten_phan_loai ?? '') == $phanLoai->ten_phan_loai ? 'selected' : '' }}>
-                            {{ $phanLoai->ten_phan_loai }}
+                    @foreach($phanLoais as $pl)
+                        <option value="{{ $pl->ten_phan_loai }}"
+                            {{ (old('phan_loai', $nhaHang->phanLoai->ten_phan_loai ?? '') == $pl->ten_phan_loai) ? 'selected' : '' }}>
+                            {{ $pl->ten_phan_loai }}
                         </option>
                     @endforeach
-                    <option value="khac">Khác</option>
+                    <option value="khac" {{ old('phan_loai') == 'khac' ? 'selected' : '' }}>Khác (Thêm mới)</option>
                 </select>
+                
                 <input type="text" name="phan_loai_moi" id="phan_loai_moi" 
-                       class="form-control mt-2" placeholder="Nhập phân loại mới" style="display:none;" 
-                       value="{{ old('phan_loai_moi') }}">
+                    class="form-control mt-2" placeholder="Nhập tên phân loại mới" 
+                    style="display: {{ old('phan_loai') == 'khac' ? 'block' : 'none' }};" 
+                    value="{{ old('phan_loai_moi') }}">
             </div>
 
             {{-- Số điện thoại --}}

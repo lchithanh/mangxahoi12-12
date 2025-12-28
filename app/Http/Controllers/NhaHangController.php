@@ -170,40 +170,64 @@ class NhaHangController extends Controller
      * Cập nhật nhà hàng
      */
     public function update(Request $request, $id)
-    {
-        $userId  = Session::get('ma_nguoi_dung');
-        $nhaHang = NhaHang::findOrFail($id);
+{
+    $userId  = Session::get('ma_nguoi_dung');
+    $nhaHang = NhaHang::findOrFail($id);
 
-        if ($userId !== $nhaHang->ma_chu_so_huu) {
-            return redirect()->route('nhahang.index')
-                ->with('error', '⚠️ Không có quyền.');
-        }
-
-        $data = $request->only([
-            'ten_nha_hang','dia_chi','mo_ta','so_dien_thoai','gio_mo_cua'
-        ]);
-
-        if ($request->hasFile('anh_dai_dien')) {
-            if ($nhaHang->anh_dai_dien) {
-                $old = $_SERVER['DOCUMENT_ROOT'] . '/' . $nhaHang->anh_dai_dien;
-                if (File::exists($old)) File::delete($old);
-            }
-
-            $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_nha_hang';
-            File::ensureDirectoryExists($uploadPath);
-
-            $file     = $request->file('anh_dai_dien');
-            $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
-            $file->move($uploadPath, $fileName);
-
-            $data['anh_dai_dien'] = 'uploads/anh_nha_hang/'.$fileName;
-        }
-
-        $nhaHang->update($data);
-
-        return redirect()->route('nhahang.show', $id)
-            ->with('success', 'Cập nhật thành công!');
+    if ($userId !== $nhaHang->ma_chu_so_huu) {
+        return redirect()->route('nhahang.index')
+            ->with('error', '⚠️ Không có quyền.');
     }
+
+    // 1. Xử lý Khu vực (Giống logic bên store)
+    $maKhuVuc = $request->ma_khu_vuc;
+    if ($request->ma_khu_vuc === 'khac' && $request->ten_khu_vuc_moi) {
+        $khuVucMoi = KhuVuc::create(['ten_khu_vuc' => $request->ten_khu_vuc_moi]);
+        $maKhuVuc = $khuVucMoi->ma_khu_vuc;
+    }
+
+    // 2. XỬ LÝ PHÂN LOẠI (Cập nhật logic này)
+    $maPhanLoai = null;
+    if ($request->phan_loai === 'khac' && $request->phan_loai_moi) {
+        // Nếu chọn khác -> Tạo mới hoặc lấy loại đã có trùng tên
+        $pl = PhanLoai::firstOrCreate(['ten_phan_loai' => $request->phan_loai_moi]);
+        $maPhanLoai = $pl->ma_phan_loai;
+    } elseif ($request->phan_loai) {
+        // Nếu chọn loại có sẵn -> Tìm ID dựa trên tên đã chọn ở Select
+        $pl = PhanLoai::where('ten_phan_loai', $request->phan_loai)->first();
+        $maPhanLoai = $pl ? $pl->ma_phan_loai : null;
+    }
+
+    // 3. Chuẩn bị dữ liệu cập nhật
+    $data = $request->only([
+        'ten_nha_hang', 'dia_chi', 'mo_ta', 'so_dien_thoai', 'gio_mo_cua'
+    ]);
+    
+    $data['ma_khu_vuc'] = $maKhuVuc;
+    $data['ma_phan_loai'] = $maPhanLoai;
+
+    // 4. Xử lý ảnh đại diện
+    if ($request->hasFile('anh_dai_dien')) {
+        if ($nhaHang->anh_dai_dien) {
+            $old = $_SERVER['DOCUMENT_ROOT'] . '/' . $nhaHang->anh_dai_dien;
+            if (File::exists($old)) File::delete($old);
+        }
+
+        $uploadPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/anh_nha_hang';
+        File::ensureDirectoryExists($uploadPath);
+
+        $file = $request->file('anh_dai_dien');
+        $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+        $file->move($uploadPath, $fileName);
+
+        $data['anh_dai_dien'] = 'uploads/anh_nha_hang/'.$fileName;
+    }
+
+    $nhaHang->update($data);
+
+    return redirect()->route('nhahang.show', $id)
+        ->with('success', 'Cập nhật thành công!');
+}
 
     /**
      * Xóa nhà hàng

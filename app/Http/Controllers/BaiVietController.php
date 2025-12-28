@@ -53,21 +53,33 @@ class BaiVietController extends Controller
      * FORM TẠO BÀI VIẾT
      */
     public function create()
-    {
-        $userId   = session('ma_nguoi_dung');
-        $userRole = session('user_role');
+{
+    $userId   = session('ma_nguoi_dung');
+    $userRole = session('user_role');
 
-        if (!$userId || $userRole !== 'chu_quan') {
-            return redirect()->route('baiviet.index')->with('error','⚠️ Chỉ chủ quán mới được tạo bài viết.');
-        }
-
-        $nhahangs = NhaHang::where('ma_chu_so_huu',$userId)->get();
-        if ($nhahangs->isEmpty()) {
-            return redirect()->route('nhahang.create')->with('error','⚠️ Vui lòng tạo nhà hàng trước.');
-        }
-
-        return view('baiviet.create', compact('nhahangs'));
+    // Chưa đăng nhập
+    if (!$userId) {
+        return redirect()->route('login')
+            ->with('error', '⚠️ Vui lòng đăng nhập.');
     }
+
+    // Người dùng thường
+    if ($userRole === 'nguoi_dung') {
+        return redirect()->route('home')
+            ->with('error', '⚠️ Chỉ cửa hàng mới có thể thêm bài viết.');
+    }
+
+    // Chủ quán
+    $nhahangs = NhaHang::where('ma_chu_so_huu', $userId)->get();
+
+    if ($nhahangs->isEmpty()) {
+        return redirect()->route('home')
+            ->with('error', '⚠️ Bạn cần đăng ký nhà hàng trước khi tạo bài viết.');
+    }
+
+    return view('baiviet.create', compact('nhahangs'));
+}
+
 
     /**
      * LƯU BÀI VIẾT
